@@ -35,12 +35,15 @@ app.get("/", (require, response) => {
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
 
-app.post("/api/insert", (req, res)=>{
+app.post("/api/addItemToDropDownTable", (req, res)=>{
 
-    const Codice = req.body.Codice;
-    const Tipo = req.body.Tipo;
-    const sqlINSERT = "INSERT INTO vdrl (Codice, Tipo) VALUES (?,?)";
-    db.query(sqlINSERT, [Codice, Tipo], (error,result)=>{
+    const value = req.body.value,
+          tableName = req.body.tableName;
+
+
+    const sqlINSERT = "INSERT INTO " + tableName + " (Tipo) VALUES ('" + value + "')";
+    db.query(sqlINSERT, (error,result)=>{
+        res.send(result)
     })
 });
 
