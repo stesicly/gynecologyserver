@@ -66,6 +66,23 @@ app.post("/api/get/listaFromTable", (req,res)=>{
         "FROM " +
         nomeTabella  ;
 
+    console.log("listaFromTable===> ", sqlSELECT)
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
+app.get("/api/get/listaEsami", (req,res)=>{
+    const nomeTabella = req.body.nomeTabella;
+    const sqlSELECT = "SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle,  " +
+        "esami.id as examinationsID, esami.titolo examinationstitle, esame.id as examinationID, esame.nome as 'name' " +
+        "FROM esamiraccoglitoreesami " +
+        "INNER JOIN esamiraccoglitore ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
+        "INNER JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
+        "INNER JOIN esamiesame ON esamiesame.esamiid=esami.id " +
+        "INNER JOIN esame ON esame.id=esamiesame.esameeid " 
+
+    console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
