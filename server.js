@@ -66,7 +66,7 @@ app.post("/api/get/listaFromTable", (req,res)=>{
         "FROM " +
         nomeTabella  ;
 
-    console.log("listaFromTable===> ", sqlSELECT)
+    //console.log("listaFromTable===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -82,7 +82,7 @@ app.get("/api/get/listaEsami", (req,res)=>{
         "INNER JOIN esamiesame ON esamiesame.esamiid=esami.id " +
         "INNER JOIN esame ON esame.id=esamiesame.esameeid " 
 
-    console.log("listaEsami===> ", sqlSELECT)
+    //console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -145,7 +145,7 @@ app.post("/api/get/getLastVisit", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY id DESC Limit 1";
 
-   console.log("GET LAST VISIT ===> ", sqlSELECT)
+   //console.log("GET LAST VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -158,7 +158,7 @@ app.post("/api/post/cancelVisit", (req,res)=>{
         nomeTabella = req.body.currentTab,
         idVisita = req.body.idVisita
     const sqlSELECT = "DELETE FROM " + nomeTabella + " WHERE id=" + idVisita;
-    console.log("cancella visita===> ", sqlSELECT)
+    //console.log("cancella visita===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -237,7 +237,7 @@ app.post("/api/get/getLastVisitForPrint", (req,res)=>{
     }
 
 
-   console.log("GET LAST VISIT TO PRINT===> ", sqlSELECT)
+   //console.log("GET LAST VISIT TO PRINT===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -253,7 +253,7 @@ app.post("/api/get/colposcopia", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY DataColpo DESC";
 
-    //console.log("GET COLPOSCOLPIA===> ", sqlSELECT)
+    ////console.log("GET COLPOSCOLPIA===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -268,7 +268,7 @@ app.post("/api/get/elencopartivisite", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY DataParto DESC";
 
-   // console.log("elencoParti===>", sqlSELECT)
+   // //console.log("elencoParti===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -298,11 +298,10 @@ app.post("/api/save/patient", (req,res)=>{
         values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
     }
 
-   // console.log("provo a salvare");
     const sqlSELECT =
         "INSERT INTO paziente (" + fields.join(",") + ") " +
         "VALUES  (" + values.join(",") + ") ";
-  //  console.log("save patient===>", sqlSELECT)
+  console.log("save patient===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
 
         res.send(result)
@@ -359,7 +358,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
                 values.push(codicePaz)
             }
 
-            if (nomeTabella==="colposcopia"){}
+
             sqlSELECT = "INSERT INTO " + nomeTabella + " (" + fields.join(",") + ") " +
                 "VALUES  (" + values.join(",") + ") ";
 
@@ -406,7 +405,7 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "UPDATE paziente " +
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
-   //console.log("update patient===>", sqlSELECT)
+   ////console.log("update patient===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
