@@ -4,6 +4,7 @@ const app = express();
 const cors = require("cors");
 const mysql = require("mysql");
 
+/**/
 const db = mysql.createPool({
     host    : "localhost",
     user    : "root",
@@ -11,6 +12,21 @@ const db = mysql.createPool({
     port : 3306,
     database: "gynecology"
 })
+const db2 = mysql.createPool({
+    host    : "31.11.39.100",
+    user    : "Sql1702274@62.149.186.129",
+    password: "Mh$Dom4Mh$Dom4",
+    database: "Sql1702274_1",
+    port : 3306,
+    connectTimeout : 5000,
+    acquireTimeout: 5000
+})
+
+
+
+// dopo lo user @62.149.186.129
+
+
 
 
 /*
@@ -55,6 +71,7 @@ app.get("/api/get/comuni", (req,res)=>{
         "ORDER BY NomeComune";
 
     db.query(sqlSELECT, (error,result)=>{
+        //console.log("getComuni===>", sqlSELECT, error, result)
         res.send(result)
     })
 })
@@ -80,7 +97,7 @@ app.get("/api/get/listaEsami", (req,res)=>{
         "INNER JOIN esamiraccoglitore ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
         "INNER JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
         "INNER JOIN esamiesame ON esamiesame.esamiid=esami.id " +
-        "INNER JOIN esame ON esame.id=esamiesame.esameeid " 
+        "INNER JOIN esame ON esame.id=esamiesame.esameid "
 
     //console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
@@ -294,14 +311,16 @@ app.post("/api/save/patient", (req,res)=>{
         values = [];
 
     for (let key in paziente){
-        fields.push(key);
-        values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
+        if (key!=="rank"){
+            fields.push(key);
+            values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
+        }
     }
 
     const sqlSELECT =
         "INSERT INTO paziente (" + fields.join(",") + ") " +
         "VALUES  (" + values.join(",") + ") ";
-  console.log("save patient===>", sqlSELECT)
+  //console.log("save patient===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
 
         res.send(result)
@@ -362,7 +381,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             sqlSELECT = "INSERT INTO " + nomeTabella + " (" + fields.join(",") + ") " +
                 "VALUES  (" + values.join(",") + ") ";
 
-          console.log("INSERT ===> ", sqlSELECT)
+          //console.log("INSERT ===> ", sqlSELECT)
             db.query(sqlSELECT, (error,result)=>{
                 res.send(result)})
         }
@@ -372,7 +391,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             }
             sqlSELECT= "UPDATE " + nomeTabella + " " +
                 "SET " + values.join(",") + whereCondition;
-           console.log("UPDATE ===> ", sqlSELECT)
+           //console.log("UPDATE ===> ", sqlSELECT)
            db.query(sqlSELECT, (error,result)=>{
                res.send(result)})
         }
@@ -387,7 +406,7 @@ app.post("/api/save/updatepatient", (req,res)=>{
         values = [];
 
     for (let key in paziente){
-        if (key!=="CodicePaz"){
+        if (key!=="CodicePaz" && key!=="rank"){
             if (key.substring(0,11)!=="salvascheda"){
                 values.push(' ' + key + '="' + (paziente[key]!=="" ? paziente[key] + '"': '"') )
             }
@@ -405,7 +424,7 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "UPDATE paziente " +
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
-   ////console.log("update patient===>", sqlSELECT)
+   console.log("update patient===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
