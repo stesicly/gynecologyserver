@@ -43,12 +43,16 @@ app.use(cors());
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:true}))
 
-
+const port = process.env.PORT || 3002;
 app.get("/", (require, response) => {
     /*const sqlINSERT = "INSERT INTO Vdrl (Codice, Tipo) VALUES (3, 'Test')"
     db.query(sqlSELECT, (error,result)=>{
     })*/
-    response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
+    response.send("" +
+        "<div>" +
+        "<h1>hello worldddd " + process.env.NODE_ENV + "</h1>" +
+        "<h2>" + port + "</h2>" +
+        "</div>")
 })
 
 app.post("/api/addItemToDropDownTable", (req, res)=>{
@@ -479,4 +483,5 @@ app.get("/api/get/esamiraccoglitore", (req, res)=>{
 
 const serverPath = "3001";
 app.listen(serverPath, ()=>{
+    console.log(`Server in ascolto sulla porta ${port}`);
 })
