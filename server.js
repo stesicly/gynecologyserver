@@ -4,7 +4,6 @@ const app = express();
 const cors = require("cors");
 const mysql = require("mysql");
 
-/**/
 const db = mysql.createPool({
     host    : "localhost",
     user    : "root",
@@ -12,6 +11,7 @@ const db = mysql.createPool({
     port : 3306,
     database: "gynecology"
 })
+/*
 const db2 = mysql.createPool({
     host    : "31.11.39.100",
     user    : "Sql1702274@62.149.186.129",
@@ -20,7 +20,7 @@ const db2 = mysql.createPool({
     port : 3306,
     connectTimeout : 5000,
     acquireTimeout: 5000
-})
+})*/
 
 
 
@@ -43,16 +43,12 @@ app.use(cors());
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:true}))
 
-const port = process.env.PORT || 3002;
+
 app.get("/", (require, response) => {
     /*const sqlINSERT = "INSERT INTO Vdrl (Codice, Tipo) VALUES (3, 'Test')"
     db.query(sqlSELECT, (error,result)=>{
     })*/
-    response.send("" +
-        "<div>" +
-        "<h1>hello worldddd " + process.env.NODE_ENV + "</h1>" +
-        "<h2>" + port + "</h2>" +
-        "</div>")
+    response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
 
 app.post("/api/addItemToDropDownTable", (req, res)=>{
@@ -75,12 +71,11 @@ app.get("/api/get/comuni", (req,res)=>{
         "ORDER BY NomeComune";
 
     db.query(sqlSELECT, (error,result)=>{
-        //console.log("getComuni===>", sqlSELECT, error, result)
         res.send(result)
     })
 })
 
-app.post("/api/get/listaFromTable", (req,res)=>{
+app.post("/api/get/listFromTable", (req,res)=>{
     const nomeTabella = req.body.nomeTabella;
     const sqlSELECT =
         "SELECT * " +
@@ -439,14 +434,25 @@ app.get("/api/get/allpatients", (req, res)=>{
     /* "SELECT LTRIM(Cognome) as Cognome, LTRIM(Nome) as Nome, RTRIM(LTRIM(elencocomuni.NomeComune)) as NomeComune, elencoprovincie.SiglaProvincia as Provincia, RTRIM(LTRIM(elencocitta.NomeComune)) as citta, elencocitta.CAP, elencoprov.SiglaProvincia as provcitta, paziente.* FROM paziente LEFT JOIN elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune LEFT JOIN elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia LEFT JOIN elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune LEFT JOIN elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia ORDER BY Cognome, Nome"
 */
     const sqlSELECT =
-        "SELECT LTRIM(Cognome) as Cognome, " +
-        "LTRIM(Nome) as Nome, " +
-        "paziente.* " +
+        "SELECT CodicePaz, LTRIM(Cognome) as Cognome, " +
+        "LTRIM(Nome) as Nome, DataNascita " +
         "FROM paziente ORDER BY Cognome, Nome, CodicePaz";
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
 });
+
+app.post("/api/get/patient", (req , res) =>{
+    const sqlSELECT =
+        "SELECT LTRIM(Cognome) as Cognome, " +
+        "LTRIM(Nome) as Nome, " +
+        "paziente.* " +
+        "FROM paziente WHERE CodicePaz ='" + req.body.codicePaziente + "'";
+    console.log("getPatient====> ",sqlSELECT)
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
 
 app.get("/api/get/allpatientsOld", (req, res)=>{
     /* elencopazienti è una vista */
@@ -483,5 +489,4 @@ app.get("/api/get/esamiraccoglitore", (req, res)=>{
 
 const serverPath = "3001";
 app.listen(serverPath, ()=>{
-    console.log(`Server in ascolto sulla porta ${port}`);
 })
