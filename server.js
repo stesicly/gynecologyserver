@@ -135,6 +135,24 @@ app.post("/api/get/ostetricavisite", (req,res)=>{
     })
 })
 
+
+app.post("/api/get/visite", (req,res)=>{
+    const codicePaziente = req.body.codicePaziente,
+        dataFieldName = req.body.dataFieldName,
+        tabId = req.body.tabId;
+
+    const sqlSELECT =
+        "SELECT * " +
+        "FROM " +
+        tabId + " " +
+        "WHERE CodicePaz=" + codicePaziente + " " +
+        "ORDER BY " + dataFieldName +  " DESC";
+
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
 app.post("/api/get/senologicavisite", (req,res)=>{
     const codicePaziente = req.body.codicePaziente;
     const sqlSELECT =
