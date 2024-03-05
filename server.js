@@ -104,36 +104,7 @@ app.get("/api/get/listaEsami", (req,res)=>{
     })
 })
 
-app.post("/api/get/ginecologicavisite", (req,res)=>{
 
-    const codicePaziente = req.body.codicePaziente;
-    const sqlSELECT =
-        /* "CREATE TEMPORARY TABLE tempGinecologica AS SELECT *, DATE(DataVisitaGin) as DataVisitaGinTemp  FROM ginecologica WHERE CodicePaz=" + codicePaziente + ";ALTER TABLE tempGinecologica DROP COLUMN DataVisitaGin;SELECT *, DataVisitaGinTemp as DataVisitaGin FROM tempGinecologica as ginecologica;"
-       */"SELECT * " +
-        "FROM " +
-        "ginecologica " +
-        "WHERE CodicePaz=" + codicePaziente + " " +
-        "ORDER BY DataVisitaGin DESC";
-
-
-    db.query(sqlSELECT, (error,result)=>{
-        res.send(result)
-    })
-})
-
-app.post("/api/get/ostetricavisite", (req,res)=>{
-    const codicePaziente = req.body.codicePaziente;
-    const sqlSELECT =
-        "SELECT * " +
-        "FROM " +
-        "ostetrica " +
-        "WHERE CodicePaz=" + codicePaziente + " " +
-        "ORDER BY DataVisitaOst DESC";
-
-    db.query(sqlSELECT, (error,result)=>{
-        res.send(result)
-    })
-})
 
 
 app.post("/api/get/visite", (req,res)=>{
@@ -153,19 +124,6 @@ app.post("/api/get/visite", (req,res)=>{
     })
 })
 
-app.post("/api/get/senologicavisite", (req,res)=>{
-    const codicePaziente = req.body.codicePaziente;
-    const sqlSELECT =
-        "SELECT * " +
-        "FROM " +
-        "senologica " +
-        "WHERE CodicePaz=" + codicePaziente + " " +
-        "ORDER BY DataEsameSen DESC";
-
-    db.query(sqlSELECT, (error,result)=>{
-        res.send(result)
-    })
-})
 
 app.post("/api/get/getLastVisit", (req,res)=>{
     const
@@ -288,21 +246,6 @@ app.post("/api/get/colposcopia", (req,res)=>{
         "ORDER BY DataColpo DESC";
 
     ////console.log("GET COLPOSCOLPIA===> ", sqlSELECT)
-    db.query(sqlSELECT, (error,result)=>{
-        res.send(result)
-    })
-})
-
-app.post("/api/get/elencopartivisite", (req,res)=>{
-    const codicePaziente = req.body.codicePaziente;
-    const sqlSELECT =
-        "SELECT * " +
-        "FROM " +
-        "elencoparti " +
-        "WHERE CodicePaz=" + codicePaziente + " " +
-        "ORDER BY DataParto DESC";
-
-   // //console.log("elencoParti===>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
