@@ -1,5 +1,5 @@
 <?php
-require 'connect.php';
+require "../connect.php";
 
 $result = $conn->query("SELECT CodicePaz, LTRIM(Cognome) as Cognome, " .
     "LTRIM(Nome) as Nome, DataNascita " .

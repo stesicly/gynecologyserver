@@ -39,4 +39,15 @@
         mysqli_close($conn);
 
     }
+
+    function saveData($query, $conn){
+        $result = $conn->query($query);
+
+        if (!$result) {
+            die('Invalid query: ' . mysqli_error($conn));
+        }
+
+        echo '{"message" : "salvataggio avvenuto"}';
+        mysqli_close($conn);
+    }
 ?>

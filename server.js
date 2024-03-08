@@ -384,7 +384,9 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "UPDATE paziente " +
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
-   console.log("update patient===>", sqlSELECT)
+
+    console.log("update patient===>", sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
