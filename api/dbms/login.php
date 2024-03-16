@@ -30,9 +30,10 @@ function getUserIpAddr(){
 }
 
 
-if (isset($_POST['username']) && isset($_POST['password'])) {
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
+$request_body = file_get_contents('php://input');
+$username = json_decode($request_body)->username;
+$password = json_decode($request_body)->password;
+
 
     $query = "SELECT id,username, password FROM user WHERE username = '" . $username . "' and password='" . $password . "'";
     $result = mysqli_query($conn, $query);
@@ -65,6 +66,6 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
     else {
         echo '{"msg":"error", "description":"Credenziali non valide", "ip" : "' . $ip .'"}';
     }
-}
+
 
 ?>

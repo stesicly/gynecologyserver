@@ -51,7 +51,7 @@ app.get("/", (require, response) => {
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
 
-app.post("/api/addItemToDropDownTable", (req, res)=>{
+app.post("/api/save/addItemToDropDownTable", (req, res)=>{
 
     const value = req.body.value,
           tableName = req.body.tableName;
@@ -89,7 +89,6 @@ app.post("/api/get/listFromTable", (req,res)=>{
 })
 
 app.get("/api/get/listaEsami", (req,res)=>{
-    const nomeTabella = req.body.nomeTabella;
     const sqlSELECT = "SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle,  " +
         "esami.id as examinationsID, esami.titolo examinationstitle, esame.id as examinationID, esame.nome as 'name' " +
         "FROM esamiraccoglitoreesami " +
@@ -144,7 +143,7 @@ app.post("/api/get/getLastVisit", (req,res)=>{
 })
 
 
-app.post("/api/post/cancelVisit", (req,res)=>{
+app.post("/api/save/cancelVisit", (req,res)=>{
     const
         codicePaziente = req.body.codicePaziente,
         nomeTabella = req.body.currentTab,
@@ -166,7 +165,7 @@ app.post("/api/get/getLastVisitForPrint", (req,res)=>{
     let sqlSELECT;
     switch(nomeTabella){
         case "ginecologica":
-            sqlSELECT = "SELECT contraccezione.Tipo as `Contraccezione`, `TerOrmRad`, `PatGinPregr`, `IntervGin`, `UltimoCPT`, " +
+            sqlSELECT = "SELECT id, contraccezione.Tipo as `Contraccezione`, `TerOrmRad`, `PatGinPregr`, `IntervGin`, `UltimoCPT`, " +
                 "`Esito`, `UltimaMx`, `EsitoMx`, `DataVisitaGin`, `UMGin`, motivovisita.Tipo as `MotivoVisita`, " +
                 "sintomi.Tipo as `Sintomi`, genesterni.Tipo as `GenEsterni`, vagina.Tipo as `Vagina`, `ColloUtero`, " +
                 "`CorpoUtero`, `Annessi`, `Addome`, `Speculum`, seno.Tipo as `Seno`, `Prescrizioni`, `Accertamenti`, `NoteGin`, `ConclInd`," +

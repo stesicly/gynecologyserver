@@ -9,7 +9,6 @@ $query = "SELECT * " .
     $data->tabId . " " .
     "WHERE CodicePaz=" . $data->codicePaziente . " " .
     "ORDER BY " . $data->dataFieldName . " DESC";
-
 echo generateJsonFromCall($query, $conn);
 
 ?>
