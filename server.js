@@ -1,8 +1,10 @@
 const express = require("express");
-const bodyParser = require("body-parser");
-const app = express();
 const cors = require("cors");
+const app = express();
+const bodyParser = require("body-parser");
 const mysql = require("mysql");
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
 
 const db = mysql.createPool({
     host    : "localhost",
@@ -20,28 +22,22 @@ const db2 = mysql.createPool({
     port : 3306,
     connectTimeout : 5000,
     acquireTimeout: 5000
-})*/
+})
+// dopo lo user @62.149.186.129/*
+// *  host: config.mysql.host,
+//       port: config.mysql.port,
+//       user: config.mysql.user,
+//       password: config.mysql.password,
+//       database: config.mysql.database,
+//       connectionLimit: config.mysql.connectionLimit,
+//       ssl: config.mysql.ssl
+// * */
 
-
-
-// dopo lo user @62.149.186.129
-
-
-
-
-/*
-*  host: config.mysql.host,
-      port: config.mysql.port,
-      user: config.mysql.user,
-      password: config.mysql.password,
-      database: config.mysql.database,
-      connectionLimit: config.mysql.connectionLimit,
-      ssl: config.mysql.ssl
-* */
-
-app.use(cors());
-app.use(express.json())
-app.use(bodyParser.urlencoded({extended:true}))
+/* reverse proxy */
+app.use("/api/*", createProxyMiddleware({
+    target: "http://localhost:80", // Indirizzo del server PHP (XAMPP)
+    changeOrigin: true
+}));
 
 
 app.get("/", (require, response) => {
@@ -436,7 +432,6 @@ app.get("/api/get/allpatientsOld", (req, res)=>{
     })
 });
 
-
 app.get("/api/get/esamiraccoglitore", (req, res)=>{
     const sqlSELECT =
         "SELECT * FROM esamiraccoglitoreesame " +
@@ -447,8 +442,5 @@ app.get("/api/get/esamiraccoglitore", (req, res)=>{
     })
 });
 
-
-
 const serverPath = "3001";
-app.listen(serverPath, ()=>{
-})
+app.listen(serverPath, ()=>{})

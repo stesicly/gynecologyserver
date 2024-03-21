@@ -1,5 +1,5 @@
 <?php
-    $DB_host     = '127.0.0.1';
+    $DB_host     = 'localhost:3000';
     $DB_user     = 'root';
     $DB_password = '';
     $DB_name     = 'gymnasium';
