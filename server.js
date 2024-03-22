@@ -33,13 +33,15 @@ const db2 = mysql.createPool({
 //       ssl: config.mysql.ssl
 // * */
 
-/* reverse proxy */
+/* reverse proxy
 app.use("/api/*", createProxyMiddleware({
     target: "http://localhost:80", // Indirizzo del server PHP (XAMPP)
     changeOrigin: true
-}));
+})); */
 
-
+app.use(cors());
+app.use(express.json())
+app.use(bodyParser.urlencoded({extended:true}))
 app.get("/", (require, response) => {
     /*const sqlINSERT = "INSERT INTO Vdrl (Codice, Tipo) VALUES (3, 'Test')"
     db.query(sqlSELECT, (error,result)=>{
@@ -99,6 +101,60 @@ app.get("/api/get/listaEsami", (req,res)=>{
     })
 })
 
+function generateSessionId() {
+    // Genera un timestamp univoco
+    const timestamp = Date.now().toString(36);
+
+    // Genera un numero casuale univoco
+    const random = Math.random().toString(36).substr(2);
+
+    // Combina il timestamp e il numero casuale per creare un ID univoco
+    const sessionId = timestamp + random;
+
+    return sessionId;
+}
+
+app.post( "/api/dbms/login", (req,res)=>{
+    const username = req.body.username,
+        password = req.body.password;
+
+    let sqlSELECT =
+        "SELECT id,username, password " +
+        "FROM user " +
+        "WHERE username='" + username + "' and password='" + password + "'";
+    db.query(sqlSELECT, (error,result)=>{
+        const sessionId = generateSessionId();
+        if (!error && result && result[0] && result[0].id && !isNaN(result[0].id)){
+                sqlSELECT =
+                    "INSERT INTO loggeduser(user, sessionid, ip) " +
+                    "VALUES(" + result[0].id + ",'" + sessionId + "','" + req.ip + "')";  /**/
+
+
+                db.query(sqlSELECT, (error,result)=>{
+                    if (!error && result && result[0]){
+                        console.log("fatto");//res.send('{"message":"ok"}')
+                    }
+                })
+
+        }
+        res.send('{"msg":"ok","description":"utente valido",  ' +
+            '"userid":"' + result[0].id + '", "sessionid" : "' + sessionId + '"}')
+    })
+})
+
+app.post( "/api/dbms/logincheck", (req,res)=>{
+    const userid = req.body.userId,
+        sessionId = req.body.sessionId;
+
+    const sqlSELECT =
+        "SELECT * " +
+        "FROM loggeduser " +
+        "WHERE ip='" + req.ip + "' and user='" + userid + "' and sessionid='" +  sessionId + "'";
+
+   db.query(sqlSELECT, (error,result)=>{
+        res.send('{"message":"ok"}')
+    })
+})
 
 
 
