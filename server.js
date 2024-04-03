@@ -88,14 +88,17 @@ app.post("/api/get/listFromTable", (req,res)=>{
 
 app.get("/api/get/listaEsami", (req,res)=>{
     const sqlSELECT = "SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle,  " +
-        "esami.id as examinationsID, esami.titolo examinationstitle, esame.id as examinationID, esame.nome as 'name' " +
-        "FROM esamiraccoglitoreesami " +
-        "INNER JOIN esamiraccoglitore ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
-        "INNER JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
-        "INNER JOIN esamiesame ON esamiesame.esamiid=esami.id " +
-        "INNER JOIN esame ON esame.id=esamiesame.esameid "
+        "IF( esami.id IS NULL , '--', esami.id) as examinationsID, " +
+        "IF(esami.titolo is NULL, '--', esami.titolo) as examinationstitle, " +
+        "IF(esame.id is NULL, '--', esame.id) as examinationID, " +
+        "IF(esame.nome is NULL,'--',esame.nome) as 'name' " +
+        "FROM esamiraccoglitore " +
+        "left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
+        "LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
+        "LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id " +
+        "LEFT JOIN esame ON esame.id=esamiesame.esameid"
 
-    //console.log("listaEsami===> ", sqlSELECT)
+    console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
