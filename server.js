@@ -127,6 +127,7 @@ app.post( "/api/dbms/login", (req,res)=>{
         "WHERE username='" + username + "' and password='" + password + "'";
     db.query(sqlSELECT, (error,result)=>{
         const sessionId = generateSessionId();
+        console.log("generate sessionId====>", sessionId)
         if (!error && result && result[0] && result[0].id && !isNaN(result[0].id)){
                 sqlSELECT =
                     "INSERT INTO loggeduser(user, sessionid, ip) " +
