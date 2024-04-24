@@ -104,6 +104,37 @@ app.get("/api/get/listaEsami", (req,res)=>{
     })
 })
 
+
+app.post( "/api/save/addRaccoglitore", (req,res)=>{
+    const name = req.body.titolo;
+    const sqlINSERT =
+                "INSERT INTO esamiraccoglitore(titolo) " +
+                "VALUES('" + name + "')";
+
+    db.query(sqlINSERT, (error,result)=>{
+        res.send('{"msg":"ok","description":"raccoglitore inserito"}')
+
+    })
+
+})
+
+
+/* inserisce in esami, poi prende l'id e inserisce in esamiraccoglitoreesami esamiraccoglitoreid(args.id) e esamiid(id) */
+app.post( "/api/save/addGruppoEsami", (req,res)=>{
+    const name = req.body.titolo,
+        raccoglitoreID = raccoglitoreID
+    const sqlINSERT =
+        "INSERT INTO esami(titolo) " +
+        "VALUES('" + name + "')";
+
+    db.query(sqlINSERT, (error,result)=>{
+        console.log("result===>", result)
+        res.send('{"msg":"ok","description":"esami inserito", "id",' + result.insertId + '}')
+
+    })
+
+})
+
 function generateSessionId() {
     // Genera un timestamp univoco
     const timestamp = Date.now().toString(36);
