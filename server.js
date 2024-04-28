@@ -54,11 +54,25 @@ app.post("/api/save/addItemToDropDownTable", (req, res)=>{
     const value = req.body.value,
           tableName = req.body.tableName;
 
+    const verifySQL = "SELECT EXISTS (" +
+        "    SELECT 1" +
+        "    FROM information_schema.columns" +
+        "    WHERE table_name = 'esame'" +
+        "    AND (column_name = 'CodicePaz' OR column_name = 'Codice')" +
+        ") AS ispresente;"
 
-    const sqlINSERT = "INSERT INTO " + tableName + " (Tipo) VALUES ('" + value + "')";
-    db.query(sqlINSERT, (error,result)=>{
-        res.send(result)
+    db.query(verifySQL, (error,result)=>{
+        res.send(result);
+        const fieldName = result.ispresente>0 ? "Tipo" : "titolo";
+        const sqlINSERT = "INSERT INTO " + tableName + " (" + fieldName + ") VALUES ('" + value + "')";;
+
+
+        db.query(sqlINSERT, (error,result)=>{
+            res.send(result)
+        })
     })
+
+
 });
 
 app.get("/api/get/comuni", (req,res)=>{
@@ -91,13 +105,13 @@ app.get("/api/get/listaEsami", (req,res)=>{
         "IF( esami.id IS NULL , '--', esami.id) as examinationsID, " +
         "IF(esami.titolo is NULL, '--', esami.titolo) as examinationstitle, " +
         "IF(esame.id is NULL, '--', esame.id) as examinationID, " +
-        "IF(esame.nome is NULL,'--',esame.nome) as 'name' " +
+        "IF(esame.titolo is NULL,'--',esame.titolo) as 'name' " +
         "FROM esamiraccoglitore " +
         "left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
         "LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
         "LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id " +
         "LEFT JOIN esame ON esame.id=esamiesame.esameid"
-
+/*SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle, esami.id, esami.titolo, esame.id, esame.nome FROM esamiraccoglitore left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id LEFT JOIN esame ON esame.id=esamiesame.esameid;*/
     console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
@@ -121,18 +135,52 @@ app.post( "/api/save/addRaccoglitore", (req,res)=>{
 
 /* inserisce in esami, poi prende l'id e inserisce in esamiraccoglitoreesami esamiraccoglitoreid(args.id) e esamiid(id) */
 app.post( "/api/save/addGruppoEsami", (req,res)=>{
-    const name = req.body.titolo,
-        raccoglitoreID = raccoglitoreID
-    const sqlINSERT =
+    const titolo = req.body.titolo,
+        raccoglitoreID = req.body.raccoglitoreID;
+    let sqlINSERT =
         "INSERT INTO esami(titolo) " +
-        "VALUES('" + name + "')";
+        "VALUES('" + titolo + "')";
 
     db.query(sqlINSERT, (error,result)=>{
-        console.log("result===>", result)
-        res.send('{"msg":"ok","description":"esami inserito", "id",' + result.insertId + '}')
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'inserimento del gruppo esami" });
+        }
 
+        let sqlINSERT =
+            "INSERT INTO esamiraccoglitoreesami(esameraccoglitoreid,esamiid) " +
+            "VALUES(" + raccoglitoreID + "," + result.insertId +")";
+
+        db.query(sqlINSERT, (error,result)=>{
+            console.log("result b===>", result)
+            res.send('{"msg":"ok","description":"esami inserito", "id",' + result.insertId + '}')
+        })
     })
+})
 
+/* inserisce in esame, poi prende l'id e inserisce in esamiesame esamiid(fromWhat.args.examinations.id) e esameid(id) */
+app.post( "/api/save/addEsame", (req,res)=>{
+    const titolo = req.body.titolo,
+        esamiID = req.body.esamiID;
+    let sqlINSERT =
+        "INSERT INTO esame(titolo) " +
+        "VALUES('" + titolo + "')";
+
+
+    db.query(sqlINSERT, (error,result)=>{
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'inserimento dell'esame" });
+        }
+
+
+        let sqlINSERT =
+            "INSERT INTO esamiesame(esamiID,esameid) " +
+            "VALUES(" + esamiID + "," + result.insertId +")";
+
+        db.query(sqlINSERT, (error,result)=>{
+            console.log("result b===>", result)
+            res.send('{"msg":"ok","description":"esame inserito", "id",' + result.insertId + '}')
+        })
+    })
 })
 
 function generateSessionId() {
@@ -532,6 +580,27 @@ app.get("/api/get/esamiraccoglitore", (req, res)=>{
         res.send(result)
     })
 });
+
+app.get("/api/get/raccoglitoreEsami" ,(req,res) => {
+    const sqlSELECT = "SELECT * FROM esamiraccoglitore ";
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
+app.get("/api/get/esami" ,(req,res) => {
+    const sqlSELECT = "SELECT * FROM esami ";
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
+app.get("/api/get/esame" ,(req,res) => {
+    const sqlSELECT = "SELECT * FROM esame ";
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
 
 const serverPath = "3001";
 app.listen(serverPath, ()=>{})
