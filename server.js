@@ -126,7 +126,7 @@ app.post( "/api/save/addRaccoglitore", (req,res)=>{
                 "VALUES('" + name + "')";
 
     db.query(sqlINSERT, (error,result)=>{
-        res.send('{"msg":"ok","description":"raccoglitore inserito"}')
+        res.send('{"msg":"ok","description":"raccoglitore inserito", "id":' + result.insertId + '}')
 
     })
 
@@ -152,7 +152,7 @@ app.post( "/api/save/addGruppoEsami", (req,res)=>{
 
         db.query(sqlINSERT, (error,result)=>{
             console.log("result b===>", result)
-            res.send('{"msg":"ok","description":"esami inserito", "id",' + result.insertId + '}')
+            res.send('{"msg":"ok","description":"esami inserito", "id":' + result.insertId + '}')
         })
     })
 })
@@ -171,14 +171,13 @@ app.post( "/api/save/addEsame", (req,res)=>{
             return res.status(500).json({ error: "Errore durante l'inserimento dell'esame" });
         }
 
-
         let sqlINSERT =
             "INSERT INTO esamiesame(esamiID,esameid) " +
             "VALUES(" + esamiID + "," + result.insertId +")";
 
         db.query(sqlINSERT, (error,result)=>{
             console.log("result b===>", result)
-            res.send('{"msg":"ok","description":"esame inserito", "id",' + result.insertId + '}')
+            res.send('{"msg":"ok","description":"esame inserito", "id":' + result.insertId + '}')
         })
     })
 })
@@ -519,7 +518,7 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
 
-    console.log("update patient===>", sqlSELECT)
+   // console.log("update patient===>", sqlSELECT)
 
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
