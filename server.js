@@ -145,14 +145,14 @@ app.post( "/api/save/addGruppoEsami", (req,res)=>{
         if (error) {
             return res.status(500).json({ error: "Errore durante l'inserimento del gruppo esami" });
         }
-
+        const gruppoID = result.insertId;
         let sqlINSERT =
             "INSERT INTO esamiraccoglitoreesami(esameraccoglitoreid,esamiid) " +
-            "VALUES(" + raccoglitoreID + "," + result.insertId +")";
+            "VALUES(" + raccoglitoreID + "," + gruppoID +")";
 
         db.query(sqlINSERT, (error,result)=>{
             console.log("result b===>", result)
-            res.send('{"msg":"ok","description":"esami inserito", "id":' + result.insertId + '}')
+            res.send('{"msg":"ok","description":"esami inserito", "idparent":' + result.insertId + ', "id" : "' + gruppoID + '"}')
         })
     })
 })
@@ -170,14 +170,14 @@ app.post( "/api/save/addEsame", (req,res)=>{
         if (error) {
             return res.status(500).json({ error: "Errore durante l'inserimento dell'esame" });
         }
-
+        const esameID = result.insertId;
         let sqlINSERT =
             "INSERT INTO esamiesame(esamiID,esameid) " +
-            "VALUES(" + esamiID + "," + result.insertId +")";
+            "VALUES(" + esamiID + "," + esameID +")";
 
         db.query(sqlINSERT, (error,result)=>{
             console.log("result b===>", result)
-            res.send('{"msg":"ok","description":"esame inserito", "id":' + result.insertId + '}')
+            res.send('{"msg":"ok","description":"esame inserito", "idparent":' + result.insertId + ', "id" : "' + esameID + '"}')
         })
     })
 })
@@ -205,7 +205,7 @@ app.post( "/api/dbms/login", (req,res)=>{
         "WHERE username='" + username + "' and password='" + password + "'";
     db.query(sqlSELECT, (error,result)=>{
         const sessionId = generateSessionId();
-        console.log("generate sessionId====>", sessionId)
+       console.log("generate sessionId====>", sessionId)
         if (!error && result && result[0] && result[0].id && !isNaN(result[0].id)){
                 sqlSELECT =
                     "INSERT INTO loggeduser(user, sessionid, ip) " +
