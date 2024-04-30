@@ -110,7 +110,8 @@ app.get("/api/get/listaEsami", (req,res)=>{
         "left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
         "LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
         "LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id " +
-        "LEFT JOIN esame ON esame.id=esamiesame.esameid"
+        "LEFT JOIN esame ON esame.id=esamiesame.esameid " +
+        "ORDER BY foldertitle, examinationstitle, name"
 /*SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle, esami.id, esami.titolo, esame.id, esame.nome FROM esamiraccoglitore left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id LEFT JOIN esame ON esame.id=esamiesame.esameid;*/
     console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
