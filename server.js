@@ -681,7 +681,6 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
         "INSERT INTO farmaco(nome) " +
         "VALUES('" + titolo + "')";
 
-
     console.log("inserimento farmaco===> ==> ", sqlINSERT)
 
     db.query(sqlINSERT, (error,result)=>{
