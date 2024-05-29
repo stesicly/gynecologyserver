@@ -491,19 +491,8 @@ app.get("/api/get/allpatientsOld", (req, res)=>{
     })
 });
 
-
 app.get("/api/get/listaEsami", (req,res)=>{
-    const sqlSELECT = "SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle,  " +
-        "IF( esami.id IS NULL , '--', esami.id) as examinationsID, " +
-        "IF(esami.titolo is NULL, '--', esami.titolo) as examinationstitle, " +
-        "IF(esame.id is NULL, '--', esame.id) as examinationID, " +
-        "IF(esame.titolo is NULL,'--',esame.titolo) as 'name' " +
-        "FROM esamiraccoglitore " +
-        "left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid " +
-        "LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid " +
-        "LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id " +
-        "LEFT JOIN esame ON esame.id=esamiesame.esameid " +
-        "ORDER BY foldertitle, examinationstitle, name"
+    const sqlSELECT = "SELECT * from listaesami"
     /*SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle, esami.id, esami.titolo, esame.id, esame.nome FROM esamiraccoglitore left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id LEFT JOIN esame ON esame.id=esamiesame.esameid;*/
     console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
@@ -595,18 +584,10 @@ app.post( "/api/save/addEsame", (req,res)=>{
 })
 
 
+
+
 app.get("/api/get/listaPrescrizioni", (req,res)=>{
-    const sqlSELECT = "SELECT prescrizioniraccoglitore.id as folderID, prescrizioniraccoglitore.titolo as foldertitle, " +
-        "IF( prescrizioni.id IS NULL , '--', prescrizioni.id) as examinationsID, " +
-        "IF(prescrizioni.name is NULL, '--', prescrizioni.name) as examinationstitle, " +
-        "IF(farmaco.id is NULL, '--', farmaco.id) as examinationID, " +
-        "IF(farmaco.nome is NULL,'--',farmaco.nome) as 'name' " +
-        "FROM prescrizioniraccoglitore " +
-        "left JOIN prescrizioniraccoglitoreprescrizioni ON prescrizioniraccoglitore.id=prescrizioniraccoglitoreprescrizioni.prescrizioniraccoglitoreid " +
-        "LEFT JOIN prescrizioni ON prescrizioni.id=prescrizioniraccoglitoreprescrizioni.prescrizioniid " +
-        "LEFT JOIN prescrizionifarmaco ON prescrizionifarmaco.prescrizioniid=prescrizioni.id " +
-        "LEFT JOIN farmaco ON farmaco.id=prescrizionifarmaco.farmacoid " +
-        "ORDER BY foldertitle, examinationstitle, name";
+    const sqlSELECT = "SELECT * From listaprescrizioni";
 
      console.log("lista prescrizioni===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
@@ -701,6 +682,28 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
     })
 })
 
+app.post( "/api/save/addIndicazioni", (req,res)=>{
+    const indicazioni = req.body.indicazioni,
+        esameID = req.body.esameID;
+    let sqlINSERT =
+        "INSERT INTO esameindicazioni(indicazionispecifiche) " +
+        "VALUES('" + indicazioni + "')";
 
+
+    db.query(sqlINSERT, (error,result)=>{
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'inserimento della posologia" });
+        }
+        const indicazioniID = result.insertId;
+        let sqlINSERT =
+            "INSERT INTO esameindicazioniesame(esameid,indicazioniid) " +
+            "VALUES(" + esameID + "," + indicazioniID +")";
+
+        db.query(sqlINSERT, (error,result)=>{
+            console.log("result b===>", result)
+            res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + indicazioniID + '"}')
+        })
+    })
+})
 const serverPath = "3001";
 app.listen(serverPath, ()=>{})
