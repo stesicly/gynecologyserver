@@ -682,6 +682,31 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
     })
 })
 
+/* inserisce in esame, poi prende l'id e inserisce in esamiesame esamiid(fromWhat.args.examinations.id) e esameid(id) */
+app.post( "/api/save/addPosologia", (req,res)=>{
+    const posologia = req.body.posologia,
+        farmacoID = req.body.farmacoID;
+    let sqlINSERT =
+        "INSERT INTO posologia(posologia) " +
+        "VALUES('" + posologia + "')";
+
+
+    db.query(sqlINSERT, (error,result)=>{
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'inserimento della posologia" });
+        }
+        const posologiaID = result.insertId;
+        let sqlINSERT =
+            "INSERT INTO farmacoposologia(farmacoid,posologiaid) " +
+            "VALUES(" + farmacoID + "," + posologiaID +")";
+
+        db.query(sqlINSERT, (error,result)=>{
+            console.log("result b===>", result)
+            res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + posologiaID + '"}')
+        })
+    })
+})
+
 app.post( "/api/save/addIndicazioni", (req,res)=>{
     const indicazioni = req.body.indicazioni,
         esameID = req.body.esameID;
