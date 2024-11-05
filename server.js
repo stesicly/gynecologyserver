@@ -173,6 +173,7 @@ app.post("/api/get/visite", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY " + dataFieldName +  " DESC";
 
+    console.log("GET VISITE ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -191,7 +192,7 @@ app.post("/api/get/getLastVisit", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY id DESC Limit 1";
 
-   //console.log("GET LAST VISIT ===> ", sqlSELECT)
+    console.log("GET LAST VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -395,7 +396,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             sqlSELECT = "INSERT INTO " + nomeTabella + " (" + fields.join(",") + ") " +
                 "VALUES  (" + values.join(",") + ") ";
 
-          //console.log("INSERT ===> ", sqlSELECT)
+          console.log("INSERT ===> ", sqlSELECT)
             db.query(sqlSELECT, (error,result)=>{
                 res.send(result)})
         }
@@ -405,7 +406,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             }
             sqlSELECT= "UPDATE " + nomeTabella + " " +
                 "SET " + values.join(",") + whereCondition;
-           //console.log("UPDATE ===> ", sqlSELECT)
+           console.log("UPDATE ===> ", sqlSELECT)
            db.query(sqlSELECT, (error,result)=>{
                res.send(result)})
         }
