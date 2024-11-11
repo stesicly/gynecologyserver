@@ -57,21 +57,51 @@ app.post("/api/save/addItemToDropDownTable", (req, res)=>{
     const verifySQL = "SELECT EXISTS (" +
         "    SELECT 1" +
         "    FROM information_schema.columns" +
-        "    WHERE table_name = 'esame'" +
-        "    AND (column_name = 'CodicePaz' OR column_name = 'Codice')" +
+        "    WHERE table_name = '" + tableName + "'" +
+        "    AND (column_name = 'CodicePaz' OR column_name = 'Codice' OR column_name = 'titolo')" +
         ") AS ispresente;"
 
-    db.query(verifySQL, (error,result)=>{
-        res.send(result);
-        const fieldName = result.ispresente>0 ? "Tipo" : "titolo";
-        const sqlINSERT = "INSERT INTO " + tableName + " (" + fieldName + ") VALUES ('" + value + "')";;
+    console.log("addItemToDropDownTable ver===> ", verifySQL)
 
+    db.query(verifySQL, (error,result)=>{
+
+        console.log("addItemToDropDownTable result===> ", result, result.ispresente, result[0].ispresente)
+        const fieldName = result[0].ispresente>0 ? "Tipo" : "titolo";
+        const sqlINSERT = "INSERT INTO " + tableName + " (" + fieldName + ") VALUES ('" + value + "')";
+
+        console.log("addItemToDropDownTable ins===> ", sqlINSERT)
 
         db.query(sqlINSERT, (error,result)=>{
             res.send(result)
         })
     })
+/*
+* db.query(sqlSELECT, (error,result)=>{
 
+        if (result.length===0){
+            for (let key in paziente){
+                fields.push(key);
+                values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
+            }
+            fields.push("CodicePaz");
+            values.push(codicePaz);
+            sqlSELECT = "INSERT INTO " + nomeTabella + " (" + fields.join(",") + ") " +
+                "VALUES  (" + values.join(",") + ") ";
+
+            db.query(sqlSELECT, (error,result)=>{})
+        }
+        else{
+            for (let key in paziente){
+                values.push(' ' + key + '="' + (paziente[key]!=="" ? paziente[key] + '"': '"') )
+            }
+            sqlSELECT= "UPDATE " + nomeTabella + " " +
+                "SET " + values.join(",") + " " +
+                "WHERE CodicePaz='" + paziente.CodicePaz + "'";
+            db.query(sqlSELECT, (error,result)=>{})
+        }
+    })
+*
+* */
 
 });
 
