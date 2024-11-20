@@ -189,8 +189,6 @@ app.post( "/api/dbms/logincheck", (req,res)=>{
     })
 })
 
-
-
 app.post("/api/get/visite", (req,res)=>{
     const codicePaziente = req.body.codicePaziente,
         dataFieldName = req.body.dataFieldName,
@@ -204,6 +202,31 @@ app.post("/api/get/visite", (req,res)=>{
         "ORDER BY " + dataFieldName +  " DESC";
 
     console.log("GET VISITE ===> ", sqlSELECT)
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
+app.post("/api/get/geFirstVisit", (req,res)=>{
+    const
+        codicePaziente = req.body.codicePaziente;
+
+    const sqlSELECT =
+        "(SELECT id, DataVisitaGin AS DataVisita " +
+        "FROM ginecologica " +
+        "WHERE CodicePaz = 5084 AND DataVisitaGin IS NOT NULL) " +
+        "UNION " +
+        "(SELECT id, DataVisitaOst AS DataVisita " +
+        "FROM ostetrica " +
+        "WHERE CodicePaz = 5084 AND DataVisitaOst IS NOT NULL) " +
+        "UNION " +
+        "(SELECT id, DataEsameSen AS DataVisita " +
+        "FROM senologica " +
+        "WHERE CodicePaz = 5084 AND DataEsameSen IS NOT NULL) " +
+        "ORDER BY DataVisita " +
+        "LIMIT 1";
+
+    console.log("GET LAST VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
