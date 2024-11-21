@@ -207,26 +207,26 @@ app.post("/api/get/visite", (req,res)=>{
     })
 })
 
-app.post("/api/get/geFirstVisit", (req,res)=>{
+app.post("/api/get/getFirstVisit", (req,res)=>{
     const
         codicePaziente = req.body.codicePaziente;
 
     const sqlSELECT =
-        "(SELECT id, DataVisitaGin AS DataVisita " +
+        "(SELECT DataVisitaGin AS PrimaVisita " +
         "FROM ginecologica " +
-        "WHERE CodicePaz = 5084 AND DataVisitaGin IS NOT NULL) " +
+        "WHERE CodicePaz = " + codicePaziente + " AND DataVisitaGin IS NOT NULL) " +
         "UNION " +
-        "(SELECT id, DataVisitaOst AS DataVisita " +
+        "(SELECT DataVisitaOst AS PrimaVisita " +
         "FROM ostetrica " +
-        "WHERE CodicePaz = 5084 AND DataVisitaOst IS NOT NULL) " +
+        "WHERE CodicePaz = " + codicePaziente + " AND DataVisitaOst IS NOT NULL) " +
         "UNION " +
-        "(SELECT id, DataEsameSen AS DataVisita " +
+        "(SELECT DataEsameSen AS PrimaVisita " +
         "FROM senologica " +
-        "WHERE CodicePaz = 5084 AND DataEsameSen IS NOT NULL) " +
-        "ORDER BY DataVisita " +
+        "WHERE CodicePaz = " + codicePaziente + " AND DataEsameSen IS NOT NULL) " +
+        "ORDER BY PrimaVisita " +
         "LIMIT 1";
 
-    console.log("GET LAST VISIT ===> ", sqlSELECT)
+    console.log("GET first VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
