@@ -435,7 +435,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
 
         if (id===-1 || id===undefined){
             for (let key in visita){
-                if (key!=="id"){
+                if (key!=="id" && key!=="undefined"){
                     fields.push(key);
                     values.push(visita[key]!=="" ? '"' + visita[key] + '"': '\"\"' )
                 }
