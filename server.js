@@ -61,15 +61,15 @@ app.post("/api/save/addItemToDropDownTable", (req, res)=>{
         "    AND (column_name = 'CodicePaz' OR column_name = 'Codice' OR column_name = 'titolo')" +
         ") AS ispresente;"
 
-    console.log("addItemToDropDownTable ver===> ", verifySQL)
+    //console.log("addItemToDropDownTable ver===> ", verifySQL)
 
     db.query(verifySQL, (error,result)=>{
 
-        console.log("addItemToDropDownTable result===> ", result, result.ispresente, result[0].ispresente)
+        //console.log("addItemToDropDownTable result===> ", result, result.ispresente, result[0].ispresente)
         const fieldName = result[0].ispresente>0 ? "Tipo" : "titolo";
         const sqlINSERT = "INSERT INTO " + tableName + " (" + fieldName + ") VALUES ('" + value + "')";
 
-        console.log("addItemToDropDownTable ins===> ", sqlINSERT)
+        //console.log("addItemToDropDownTable ins===> ", sqlINSERT)
 
         db.query(sqlINSERT, (error,result)=>{
             res.send(result)
@@ -156,7 +156,7 @@ app.post( "/api/dbms/login", (req,res)=>{
         "WHERE username='" + username + "' and password='" + password + "'";
     db.query(sqlSELECT, (error,result)=>{
         const sessionId = generateSessionId();
-       console.log("generate sessionId====>", sessionId)
+      // console.log("generate sessionId====>", sessionId)
         if (!error && result && result[0] && result[0].id && !isNaN(result[0].id)){
                 sqlSELECT =
                     "INSERT INTO loggeduser(user, sessionid, ip) " +
@@ -165,7 +165,7 @@ app.post( "/api/dbms/login", (req,res)=>{
 
                 db.query(sqlSELECT, (error,result)=>{
                     if (!error && result && result[0]){
-                        console.log("fatto");//res.send('{"message":"ok"}')
+                        //console.log("fatto");//res.send('{"message":"ok"}')
                     }
                 })
 
@@ -201,7 +201,7 @@ app.post("/api/get/visite", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY " + dataFieldName +  " DESC";
 
-    console.log("GET VISITE ===> ", sqlSELECT)
+    //console.log("GET VISITE ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -226,7 +226,7 @@ app.post("/api/get/getFirstVisit", (req,res)=>{
         "ORDER BY PrimaVisita " +
         "LIMIT 1";
 
-    console.log("GET first VISIT ===> ", sqlSELECT)
+    //console.log("GET first VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -245,7 +245,7 @@ app.post("/api/get/getLastVisit", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY id DESC Limit 1";
 
-    console.log("GET LAST VISIT ===> ", sqlSELECT)
+    //("GET LAST VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -372,6 +372,17 @@ app.get("/api/get/newCodicePaz", (req, res)=>{
     })
 });
 
+function setFieldValue(table, key){
+    switch (table[key]){
+
+        case "":
+            return '\"\"';
+            break;
+
+        default:
+            return '"' + table[key] + '"'
+    }
+}
 
 app.post("/api/save/patient", (req,res)=>{
     const paziente = req.body.paziente,
@@ -379,9 +390,10 @@ app.post("/api/save/patient", (req,res)=>{
         values = [];
 
     for (let key in paziente){
-        if (key!=="rank"){
+        if (key!=="rank") {
             fields.push(key);
             values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
+            //values.push(setFieldValue(paziente, key))
         }
     }
 
@@ -406,6 +418,7 @@ function salvaSingolaScheda(nomeTabella, codicePaz, paziente){
             for (let key in paziente){
                 fields.push(key);
                 values.push(paziente[key]!=="" ? '"' + paziente[key] + '"': '\"\"' )
+                //values.push(setFieldValue(paziente, key))
             }
             fields.push("CodicePaz");
             values.push(codicePaz);
@@ -417,6 +430,8 @@ function salvaSingolaScheda(nomeTabella, codicePaz, paziente){
         else{
             for (let key in paziente){
                 values.push(' ' + key + '="' + (paziente[key]!=="" ? paziente[key] + '"': '"') )
+
+                //values.push(' ' + key + '="' + setFieldValue(paziente, key) + '"')
             }
             sqlSELECT= "UPDATE " + nomeTabella + " " +
                 "SET " + values.join(",") + " " +
@@ -438,6 +453,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
                 if (key!=="id" && key!=="undefined"){
                     fields.push(key);
                     values.push(visita[key]!=="" ? '"' + visita[key] + '"': '\"\"' )
+                    //values.push(setFieldValue(visita, key))
                 }
             }
             if (fields.indexOf("CodicePaz")===-1){
@@ -456,6 +472,8 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
         else{
             for (let key in visita){
                 values.push(' ' + key + '="' + (visita[key]!=="" ? visita[key] + '"': '"') )
+
+                //values.push(' ' + key + '="' + setFieldValue(visita, key) + '"' )
             }
             sqlSELECT= "UPDATE " + nomeTabella + " " +
                 "SET " + values.join(",") + whereCondition;
@@ -477,6 +495,8 @@ app.post("/api/save/updatepatient", (req,res)=>{
         if (key!=="CodicePaz" && key!=="rank"){
             if (key.substring(0,11)!=="salvascheda"){
                 values.push(' ' + key + '="' + (paziente[key]!=="" ? paziente[key] + '"': '"') )
+
+                //values.push(' ' + key + '="' + setFieldValue(paziente, key) + '"')
             }
             else{
                 switch (key){
@@ -493,7 +513,7 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
 
-   // console.log("update patient===>", sqlSELECT)
+    //console.log("update patient===>", sqlSELECT)
 
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
@@ -519,7 +539,7 @@ app.post("/api/get/patient", (req , res) =>{
         "LTRIM(Nome) as Nome, " +
         "paziente.* " +
         "FROM paziente WHERE CodicePaz ='" + req.body.codicePaziente + "'";
-    console.log("getPatient====> ",sqlSELECT)
+    //console.log("getPatient====> ",sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -548,7 +568,7 @@ app.get("/api/get/allpatientsOld", (req, res)=>{
 app.get("/api/get/listaEsami", (req,res)=>{
     const sqlSELECT = "SELECT * from listaesami"
     /*SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle, esami.id, esami.titolo, esame.id, esame.nome FROM esamiraccoglitore left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id LEFT JOIN esame ON esame.id=esamiesame.esameid;*/
-    console.log("listaEsami===> ", sqlSELECT)
+    //console.log("listaEsami===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -606,7 +626,7 @@ app.post( "/api/save/addGruppoEsami", (req,res)=>{
             "VALUES(" + raccoglitoreID + "," + gruppoID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esami inserito", "idparent":' + result.insertId + ', "id" : "' + gruppoID + '"}')
         })
     })
@@ -631,7 +651,7 @@ app.post( "/api/save/addEsame", (req,res)=>{
             "VALUES(" + esamiID + "," + esameID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esame inserito", "idparent":' + result.insertId + ', "id" : "' + esameID + '"}')
         })
     })
@@ -643,7 +663,7 @@ app.post( "/api/save/addEsame", (req,res)=>{
 app.get("/api/get/listaPrescrizioni", (req,res)=>{
     const sqlSELECT = "SELECT * From listaprescrizioni";
 
-     console.log("lista prescrizioni===> ", sqlSELECT)
+     //console.log("lista prescrizioni===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -702,7 +722,7 @@ app.post( "/api/save/addGruppoPrescrizioni", (req,res)=>{
             "VALUES(" + raccoglitoreID + "," + gruppoID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esami inserito", "idparent":' + result.insertId + ', "id" : "' + gruppoID + '"}')
         })
     })
@@ -716,7 +736,7 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
         "INSERT INTO farmaco(nome) " +
         "VALUES('" + titolo + "')";
 
-    console.log("inserimento farmaco===> ==> ", sqlINSERT)
+    //console.log("inserimento farmaco===> ==> ", sqlINSERT)
 
     db.query(sqlINSERT, (error,result)=>{
         if (error) {
@@ -727,10 +747,10 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
             "INSERT INTO prescrizionifarmaco(prescrizioniid,farmacoid) " +
             "VALUES(" + esamiID + "," + farmacoID +")";
 
-        console.log("inserimento prescrizionifarmaco===>", sqlINSERT)
+        //console.log("inserimento prescrizionifarmaco===>", sqlINSERT)
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esame inserito", "idparent":' + result.insertId + ', "id" : "' + farmacoID + '"}')
         })
     })
@@ -755,7 +775,7 @@ app.post( "/api/save/addPosologia", (req,res)=>{
             "VALUES(" + farmacoID + "," + posologiaID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + posologiaID + '"}')
         })
     })
@@ -779,7 +799,7 @@ app.post( "/api/save/addIndicazioni", (req,res)=>{
             "VALUES(" + esameID + "," + indicazioniID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            console.log("result b===>", result)
+            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + indicazioniID + '"}')
         })
     })
