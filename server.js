@@ -117,7 +117,7 @@ app.get("/api/get/comuni", (req,res)=>{
     })
 })
 
-app.post("/api/get/listFromTable", (req,res)=>{
+app.post("/api/get/listFromTable2", (req,res)=>{
     const nomeTabella = req.body.nomeTabella;
     const sqlSELECT =
         "SELECT * " +
@@ -130,6 +130,37 @@ app.post("/api/get/listFromTable", (req,res)=>{
     })
 })
 
+app.post("/api/get/listFromTable", (req,res)=>{
+    const nomeTabella = req.body.nomeTabella;
+    let sqlSelect =
+        "SELECT COLUMN_NAME as name " +
+        "FROM INFORMATION_SCHEMA.COLUMNS " +
+        "WHERE TABLE_NAME = '" + nomeTabella + "' AND COLUMN_NAME IN ('Nome', 'Tipo', 'NomeComune')";
+    console.log("sqlSelect===> ", sqlSelect);
+
+    db.query(sqlSelect, (error,result)=>{
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'estrazione del campo della tabella" });
+        }
+        if (!error && result && result[0] && result[0].name){
+            const nomeCampo = result[0].name
+            console.log("nomeCampo==> ", nomeCampo);
+
+            sqlSELECT =
+                "SELECT * " +
+                "FROM " +
+                nomeTabella +
+                " ORDER BY " + nomeCampo
+
+
+            db.query(sqlSELECT, (error,result)=>{
+                res.send(result)
+            })
+        }
+    })
+
+
+})
 
 
 
