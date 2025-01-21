@@ -105,6 +105,37 @@ app.post("/api/save/addItemToDropDownTable", (req, res)=>{
 
 });
 
+app.post("/api/del/delItemToDropDownTable", (req, res)=>{
+
+    const value = req.body.value,
+        tableName = req.body.tableName;
+
+    let verifySQL =
+        "SELECT COLUMN_NAME as name " +
+        "FROM INFORMATION_SCHEMA.COLUMNS " +
+        "WHERE TABLE_NAME = '" + tableName + "' AND COLUMN_NAME IN ('CodicePaz', 'Codice', 'CodiceComune')";
+    console.log("sqlSelect===> ", verifySQL);
+
+    db.query(verifySQL, (error,result)=>{
+        if (error) {
+            return res.status(500).json({ error: "Errore durante l'estrazione del campo della tabella" });
+        }
+        if (!error && result && result[0] && result[0].name){
+            const fieldName = result[0].name
+            console.log("nomeCampo==> ", fieldName);
+
+            const sqlDELETE = "DELETE FROM " + tableName + " WHERE " + fieldName + " = '" + value + "'";
+
+            console.log("DELETE query===> ", sqlDELETE)
+
+            db.query(sqlDELETE, (error,result)=>{
+                res.send(result)
+            })
+        }
+    })
+
+});
+
 app.get("/api/get/comuni", (req,res)=>{
     const sqlSELECT =
         "SELECT * " +
