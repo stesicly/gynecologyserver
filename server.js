@@ -61,15 +61,12 @@ app.post("/api/save/addItemToDropDownTable", (req, res)=>{
         "    AND (column_name = 'CodicePaz' OR column_name = 'Codice' OR column_name = 'titolo')" +
         ") AS ispresente;"
 
-    //console.log("addItemToDropDownTable ver===> ", verifySQL)
 
     db.query(verifySQL, (error,result)=>{
 
-        //console.log("addItemToDropDownTable result===> ", result, result.ispresente, result[0].ispresente)
         const fieldName = result[0].ispresente>0 ? "Tipo" : "titolo";
         const sqlINSERT = "INSERT INTO " + tableName + " (" + fieldName + ") VALUES ('" + value + "')";
 
-        //console.log("addItemToDropDownTable ins===> ", sqlINSERT)
 
         db.query(sqlINSERT, (error,result)=>{
             res.send(result)
@@ -114,7 +111,6 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
         "SELECT COLUMN_NAME as name " +
         "FROM INFORMATION_SCHEMA.COLUMNS " +
         "WHERE TABLE_NAME = '" + tableName + "' AND COLUMN_NAME IN ('CodicePaz', 'Codice', 'CodiceComune')";
-    console.log("sqlSelect===> ", verifySQL);
 
     db.query(verifySQL, (error,result)=>{
         if (error) {
@@ -122,11 +118,8 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
         }
         if (!error && result && result[0] && result[0].name){
             const fieldName = result[0].name
-            console.log("nomeCampo==> ", fieldName);
 
             const sqlDELETE = "DELETE FROM " + tableName + " WHERE " + fieldName + " = '" + value + "'";
-
-            console.log("DELETE query===> ", sqlDELETE)
 
             db.query(sqlDELETE, (error,result)=>{
                 res.send(result)
@@ -148,6 +141,17 @@ app.get("/api/get/comuni", (req,res)=>{
     })
 })
 
+app.get("/api/get/defaults", (req,res)=>{
+    const sqlSELECT =
+        "SELECT * " +
+        "FROM " +
+        "defaults "
+
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
 app.post("/api/get/listFromTable2", (req,res)=>{
     const nomeTabella = req.body.nomeTabella;
     const sqlSELECT =
@@ -155,7 +159,6 @@ app.post("/api/get/listFromTable2", (req,res)=>{
         "FROM " +
         nomeTabella  ;
 
-    //console.log("listaFromTable===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -167,7 +170,6 @@ app.post("/api/get/listFromTable", (req,res)=>{
         "SELECT COLUMN_NAME as name " +
         "FROM INFORMATION_SCHEMA.COLUMNS " +
         "WHERE TABLE_NAME = '" + nomeTabella + "' AND COLUMN_NAME IN ('Nome', 'Tipo', 'NomeComune')";
-    console.log("sqlSelect===> ", sqlSelect);
 
     db.query(sqlSelect, (error,result)=>{
         if (error) {
@@ -175,7 +177,6 @@ app.post("/api/get/listFromTable", (req,res)=>{
         }
         if (!error && result && result[0] && result[0].name){
             const nomeCampo = result[0].name
-            console.log("nomeCampo==> ", nomeCampo);
 
             sqlSELECT =
                 "SELECT * " +
@@ -218,7 +219,7 @@ app.post( "/api/dbms/login", (req,res)=>{
         "WHERE username='" + username + "' and password='" + password + "'";
     db.query(sqlSELECT, (error,result)=>{
         const sessionId = generateSessionId();
-      // console.log("generate sessionId====>", sessionId)
+
         if (!error && result && result[0] && result[0].id && !isNaN(result[0].id)){
                 sqlSELECT =
                     "INSERT INTO loggeduser(user, sessionid, ip) " +
@@ -227,7 +228,6 @@ app.post( "/api/dbms/login", (req,res)=>{
 
                 db.query(sqlSELECT, (error,result)=>{
                     if (!error && result && result[0]){
-                        //console.log("fatto");//res.send('{"message":"ok"}')
                     }
                 })
 
@@ -263,7 +263,6 @@ app.post("/api/get/visite", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY " + dataFieldName +  " DESC";
 
-    //console.log("GET VISITE ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -288,7 +287,6 @@ app.post("/api/get/getFirstVisit", (req,res)=>{
         "ORDER BY PrimaVisita " +
         "LIMIT 1";
 
-    //console.log("GET first VISIT ===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -320,9 +318,51 @@ app.post("/api/save/cancelVisit", (req,res)=>{
         nomeTabella = req.body.currentTab,
         idVisita = req.body.idVisita
     const sqlSELECT = "DELETE FROM " + nomeTabella + " WHERE id=" + idVisita;
-    //console.log("cancella visita===> ", sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
+    })
+})
+
+app.post("/api/save/defaults", (req,res)=>{
+    let sqlSELECT =
+        "SELECT * " +
+        "FROM " +
+        "defaults ";
+    const defaults = req.body.defaults,
+        fields = [],
+        values = [];
+    console.log(defaults);
+    db.query(sqlSELECT, (error,result)=>{
+        if (!error){
+            if (result && result[0] && result[0].addome){
+
+                for (let key in defaults){
+                    values.push(' ' + key + '="' + (defaults[key]!=="" ? defaults[key] + '"': '"') )
+                }
+                sqlSELECT= "UPDATE defaults " +
+                    "SET " + values.join(",");
+                console.log("UPDATE defaults===> ", sqlSELECT)
+                db.query(sqlSELECT, (error,result)=>{
+                    res.send(result)})
+            }
+            else{
+                for (let key in defaults){
+                    if (key!=="undefined"){
+                        fields.push(key);
+                        values.push(defaults[key]!=="" ? '"' + defaults[key] + '"': '\"\"' )
+                    }
+                }
+
+                sqlSELECT = "INSERT INTO defaults (" + fields.join(",") + ") " +
+                    "VALUES  (" + values.join(",") + ") ";
+
+                console.log("INSERT defaults ===> ", sqlSELECT)
+                db.query(sqlSELECT, (error,result)=>{
+                    res.send(result)}
+                )
+            }
+        }
     })
 })
 
@@ -399,7 +439,6 @@ app.post("/api/get/getLastVisitForPrint", (req,res)=>{
     }
 
 
-   //console.log("GET LAST VISIT TO PRINT===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -415,7 +454,7 @@ app.post("/api/get/colposcopia", (req,res)=>{
         "WHERE CodicePaz=" + codicePaziente + " " +
         "ORDER BY DataColpo DESC";
 
-    ////console.log("GET COLPOSCOLPIA===> ", sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -462,7 +501,7 @@ app.post("/api/save/patient", (req,res)=>{
     const sqlSELECT =
         "INSERT INTO paziente (" + fields.join(",") + ") " +
         "VALUES  (" + values.join(",") + ") ";
-  //console.log("save patient===>", sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
 
         res.send(result)
@@ -527,7 +566,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             sqlSELECT = "INSERT INTO " + nomeTabella + " (" + fields.join(",") + ") " +
                 "VALUES  (" + values.join(",") + ") ";
 
-          console.log("INSERT ===> ", sqlSELECT)
+          //console.log("INSERT ===> ", sqlSELECT)
             db.query(sqlSELECT, (error,result)=>{
                 res.send(result)})
         }
@@ -539,7 +578,7 @@ function salvaVisita(nomeTabella, codicePaz, id, visita, res){
             }
             sqlSELECT= "UPDATE " + nomeTabella + " " +
                 "SET " + values.join(",") + whereCondition;
-           console.log("UPDATE ===> ", sqlSELECT)
+           //console.log("UPDATE ===> ", sqlSELECT)
            db.query(sqlSELECT, (error,result)=>{
                res.send(result)})
         }
@@ -575,7 +614,6 @@ app.post("/api/save/updatepatient", (req,res)=>{
         "SET " + values.join(",") + " " +
         "WHERE CodicePaz='" + paziente.CodicePaz + "'";
 
-    //console.log("update patient===>", sqlSELECT)
 
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
@@ -601,7 +639,7 @@ app.post("/api/get/patient", (req , res) =>{
         "LTRIM(Nome) as Nome, " +
         "paziente.* " +
         "FROM paziente WHERE CodicePaz ='" + req.body.codicePaziente + "'";
-    //console.log("getPatient====> ",sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -630,7 +668,7 @@ app.get("/api/get/allpatientsOld", (req, res)=>{
 app.get("/api/get/listaEsami", (req,res)=>{
     const sqlSELECT = "SELECT * from listaesami"
     /*SELECT esamiraccoglitore.id as folderID, esamiraccoglitore.titolo as foldertitle, esami.id, esami.titolo, esame.id, esame.nome FROM esamiraccoglitore left JOIN esamiraccoglitoreesami ON esamiraccoglitore.id=esamiraccoglitoreesami.esameraccoglitoreid LEFT JOIN esami ON esami.id=esamiraccoglitoreesami.esamiid LEFT JOIN esamiesame ON esamiesame.esamiid=esami.id LEFT JOIN esame ON esame.id=esamiesame.esameid;*/
-    //console.log("listaEsami===> ", sqlSELECT)
+
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -688,7 +726,6 @@ app.post( "/api/save/addGruppoEsami", (req,res)=>{
             "VALUES(" + raccoglitoreID + "," + gruppoID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esami inserito", "idparent":' + result.insertId + ', "id" : "' + gruppoID + '"}')
         })
     })
@@ -713,7 +750,6 @@ app.post( "/api/save/addEsame", (req,res)=>{
             "VALUES(" + esamiID + "," + esameID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esame inserito", "idparent":' + result.insertId + ', "id" : "' + esameID + '"}')
         })
     })
@@ -725,7 +761,6 @@ app.post( "/api/save/addEsame", (req,res)=>{
 app.get("/api/get/listaPrescrizioni", (req,res)=>{
     const sqlSELECT = "SELECT * From listaprescrizioni";
 
-     //console.log("lista prescrizioni===> ", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -784,7 +819,6 @@ app.post( "/api/save/addGruppoPrescrizioni", (req,res)=>{
             "VALUES(" + raccoglitoreID + "," + gruppoID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esami inserito", "idparent":' + result.insertId + ', "id" : "' + gruppoID + '"}')
         })
     })
@@ -798,8 +832,6 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
         "INSERT INTO farmaco(nome) " +
         "VALUES('" + titolo + "')";
 
-    //console.log("inserimento farmaco===> ==> ", sqlINSERT)
-
     db.query(sqlINSERT, (error,result)=>{
         if (error) {
             return res.status(500).json({ error: "Errore durante l'inserimento dell'esame" });
@@ -809,10 +841,7 @@ app.post( "/api/save/addFarmaco", (req,res)=>{
             "INSERT INTO prescrizionifarmaco(prescrizioniid,farmacoid) " +
             "VALUES(" + esamiID + "," + farmacoID +")";
 
-        //console.log("inserimento prescrizionifarmaco===>", sqlINSERT)
-
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"esame inserito", "idparent":' + result.insertId + ', "id" : "' + farmacoID + '"}')
         })
     })
@@ -837,7 +866,6 @@ app.post( "/api/save/addPosologia", (req,res)=>{
             "VALUES(" + farmacoID + "," + posologiaID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + posologiaID + '"}')
         })
     })
@@ -861,7 +889,6 @@ app.post( "/api/save/addIndicazioni", (req,res)=>{
             "VALUES(" + esameID + "," + indicazioniID +")";
 
         db.query(sqlINSERT, (error,result)=>{
-            //console.log("result b===>", result)
             res.send('{"msg":"ok","description":"posologia inserita", "idparent":' + result.insertId + ', "id" : "' + indicazioniID + '"}')
         })
     })
