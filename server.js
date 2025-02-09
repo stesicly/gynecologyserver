@@ -233,7 +233,7 @@ app.post( "/api/dbms/login", (req,res)=>{
 
         }
         res.send('{"msg":"ok","description":"utente valido",  ' +
-            '"userid":"' + result[0].id + '", "sessionid" : "' + sessionId + '"}')
+            '"userid":"' + result[0]?.id + '", "sessionid" : "' + sessionId + '"}')
     })
 })
 
