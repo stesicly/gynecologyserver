@@ -1,9 +1,18 @@
 const express = require("express");
 const cors = require("cors");
-const app = express();
 const bodyParser = require("body-parser");
 const mysql = require("mysql");
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const https = require('https');
+const fs = require('fs');
+const { WebSocketServer } = require("ws"); // Importa WebSocket
+
+const app = express();
+
+// Carica i certificati SSL
+const server = https.createServer({
+    key: fs.readFileSync('./certs/private-key.pem'),
+    cert: fs.readFileSync('./certs/certificate.pem')
+}, app);
 
 
 const db = mysql.createPool({
@@ -13,39 +22,13 @@ const db = mysql.createPool({
     port : 3306,
     database: "gynecology"
 })
-/*
-const db2 = mysql.createPool({
-    host    : "31.11.39.100",
-    user    : "Sql1702274@62.149.186.129",
-    password: "Mh$Dom4Mh$Dom4",
-    database: "Sql1702274_1",
-    port : 3306,
-    connectTimeout : 5000,
-    acquireTimeout: 5000
-})
-// dopo lo user @62.149.186.129/*
-// *  host: config.mysql.host,
-//       port: config.mysql.port,
-//       user: config.mysql.user,
-//       password: config.mysql.password,
-//       database: config.mysql.database,
-//       connectionLimit: config.mysql.connectionLimit,
-//       ssl: config.mysql.ssl
-// * */
 
-/* reverse proxy
-app.use("/api/*", createProxyMiddleware({
-    target: "http://localhost:80", // Indirizzo del server PHP (XAMPP)
-    changeOrigin: true
-})); */
 
 app.use(cors());
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:true}))
+
 app.get("/", (require, response) => {
-    /*const sqlINSERT = "INSERT INTO Vdrl (Codice, Tipo) VALUES (3, 'Test')"
-    db.query(sqlSELECT, (error,result)=>{
-    })*/
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
 
@@ -620,6 +603,48 @@ app.post("/api/save/updatepatient", (req,res)=>{
     })
 })
 
+// Funzione per ottenere tutti i pazienti
+function getAllPatients(ws) {
+    const sqlSelectAllPatients = `
+        SELECT CodicePaz, LTRIM(Cognome) as Cognome, 
+        LTRIM(Nome) as Nome, DataNascita 
+        FROM paziente ORDER BY Cognome, Nome, CodicePaz`;
+    db.query(sqlSelectAllPatients, (error, result) => {
+        if (error) {
+            ws.send(JSON.stringify({ error: "Errore nel recupero dei pazienti" }));
+        } else {
+            ws.send(JSON.stringify({ patients: result }));
+        }
+    });
+}
+
+// Funzione per ottenere i dati di un paziente specifico
+function getPatient(ws, codicePaziente) {
+    const sqlSelectPatient = `
+        SELECT LTRIM(Cognome) as Cognome, 
+        LTRIM(Nome) as Nome, paziente.* 
+        FROM paziente WHERE CodicePaz = '${codicePaziente}'`;
+    db.query(sqlSelectPatient, (error, result) => {
+        if (error) {
+            ws.send(JSON.stringify({ error: "Errore nel recupero dei dati del paziente" }));
+        } else {
+            ws.send(JSON.stringify({ patient: result }));
+        }
+    });
+}
+
+// Funzione per ottenere la lista degli esami
+function getExamList(ws) {
+    const sqlSelectExamList = "SELECT * FROM listaesami";
+    db.query(sqlSelectExamList, (error, result) => {
+        if (error) {
+            ws.send(JSON.stringify({ error: "Errore nel recupero della lista esami" }));
+        } else {
+            ws.send(JSON.stringify({ exams: result }));
+        }
+    });
+}
+
 app.get("/api/get/allpatients", (req, res)=>{
 
     /* "SELECT LTRIM(Cognome) as Cognome, LTRIM(Nome) as Nome, RTRIM(LTRIM(elencocomuni.NomeComune)) as NomeComune, elencoprovincie.SiglaProvincia as Provincia, RTRIM(LTRIM(elencocitta.NomeComune)) as citta, elencocitta.CAP, elencoprov.SiglaProvincia as provcitta, paziente.* FROM paziente LEFT JOIN elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune LEFT JOIN elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia LEFT JOIN elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune LEFT JOIN elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia ORDER BY Cognome, Nome"
@@ -893,5 +918,63 @@ app.post( "/api/save/addIndicazioni", (req,res)=>{
         })
     })
 })
+
+// 🔥 **AGGIUNTA: WebSocket**
+const wss = new WebSocketServer({ server });
+
+wss.on("connection", (ws, req) => {
+    const ip = req.socket.remoteAddress;
+    console.log(`Nuova connessione WebSocket da ${ip}`);
+
+    ws.send(JSON.stringify({ message: "Connessione WebSocket stabilita" }));
+
+    // Quando il server riceve un messaggio dal client
+    ws.on("message", (message) => {
+        console.log(`Messaggio ricevuto: ${message}`);
+
+        // Gestisci il messaggio in base al tipo di richiesta
+        try {
+            const request = JSON.parse(message); // Assumiamo che il messaggio sia un JSON
+
+            switch (request.type) {
+                case "get_all_patients":
+                    getAllPatients(ws);
+                    break;
+
+                case "get_patient":
+                    if (request.codicePaziente) {
+                        getPatient(ws, request.codicePaziente);
+                    } else {
+                        ws.send(JSON.stringify({ error: "Codice paziente mancante" }));
+                    }
+                    break;
+
+                case "get_exam_list":
+                    getExamList(ws);
+                    break;
+
+                default:
+                    ws.send(JSON.stringify({ error: "Richiesta non valida" }));
+            }
+        } catch (err) {
+            ws.send(JSON.stringify({ error: "Errore nel parsing della richiesta" }));
+        }
+    });
+
+
+    ws.on("close", () => {
+        console.log(`WebSocket chiuso per ${ip}`);
+    });
+});
+
+/*
 const serverPath = "3001";
 app.listen(serverPath, ()=>{})
+*/
+
+// Avvia il server HTTP (Express + WebSocket)
+const PORT = 3001;
+server.listen(PORT, () => {
+    console.log(`Server HTTPS e WSS in ascolto su https://localhost:${PORT} e https://192.168.1.63:${PORT}`);
+
+});

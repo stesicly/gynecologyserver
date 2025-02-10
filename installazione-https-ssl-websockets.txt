@@ -1,0 +1,64 @@
+QUESTO IN FASE DI SVILUPPO
+- copiare il file openssl.cnf nella cartella server
+- verificare se openssl è presente. con git bush installato, c'è. Il comando è openssl version
+- generare certificati con
+    openssl req -x509 -newkey rsa:2048 -keyout private-key.pem -out certificate.pem -days 365 -nodes -config openssl.cnf
+
+- verificare se la macchina sulla quale è installato il server.js ascolta https://localhost e gli altri indirizzi https
+
+PER ANDARE ONLINE
+- andare su https://letsencrypt.org/it/ e registrare i certificati in base al dns.
+Procedura con Let's Encrypt:
+Vai su Let's Encrypt:
+Vai su Let's Encrypt e leggi le informazioni, ma fondamentalmente Let's Encrypt fornisce certificati SSL/TLS gratuiti per i tuoi domini.
+
+Usa Certbot: Per ottenere e installare i certificati SSL/TLS, puoi usare un client chiamato Certbot.
+Certbot è lo strumento ufficiale per automatizzare il processo di acquisizione e rinnovo dei certificati SSL di Let's Encrypt.
+
+Se non hai Certbot installato, puoi farlo seguendo le istruzioni ufficiali qui: Certbot - Getting Started.
+Ottenere i certificati:
+
+Esegui Certbot con il comando adatto per il tuo ambiente. Ad esempio, per un server che sta ospitando un sito web con Apache o Nginx, potresti usare un comando come questo (a seconda della configurazione del tuo server):
+sudo certbot --apache -d tuo-dominio.com
+
+Se hai un server Node.js, puoi eseguire:
+sudo certbot certonly --standalone -d tuo-dominio.com
+
+Questo comando genererà il certificato e la chiave privata per il tuo dominio.
+
+Sostituire i certificati:
+
+Una volta ottenuti i certificati, troverai il certificato e la chiave privata nella cartella predefinita di Certbot, che potrebbe essere qualcosa come /etc/letsencrypt/live/tuo-dominio.com/.
+I file che troverai sono:
+fullchain.pem (certificato pubblico completo)
+privkey.pem (chiave privata)
+
+Sostituisci i file nel tuo server Node.js con quelli ottenuti da Let's Encrypt:
+
+private-key.pem -> sostituisci con privkey.pem
+certificate.pem -> sostituisci con fullchain.pem
+Configurare il server HTTPS con i certificati di Let's Encrypt:
+
+Ora nel codice di Node.js, utilizzi i certificati ottenuti da Let's Encrypt:
+
+const server = https.createServer({
+    key: fs.readFileSync('/etc/letsencrypt/live/tuo-dominio.com/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/tuo-dominio.com/fullchain.pem')
+}, app);
+
+Testare la connessione HTTPS:
+
+Dopo aver sostituito i certificati, avvia il tuo server Node.js e visita il tuo sito tramite https://tuo-dominio.com.
+A questo punto il certificato dovrebbe essere valido e non ti verranno più mostrati avvisi di "connessione non sicura" nel browser.
+Rinnovo automatico
+Uno dei vantaggi di Let's Encrypt è che i certificati sono validi per 90 giorni, ma puoi configurare Certbot per rinnovarli automaticamente con un cron job:
+
+bash
+sudo certbot renew --quiet
+Questo comando rinnoverà il certificato quando necessario, senza che tu debba intervenire manualmente.
+
+In sintesi:
+Usa Let's Encrypt per ottenere certificati validi per il tuo dominio pubblico.
+Sostituisci i certificati generati da OpenSSL con quelli ottenuti da Let's Encrypt nella cartella certs.
+Configura il server con i nuovi certificati.
+Certbot si occupa anche di rinnovare automaticamente i certificati quando scadono.
