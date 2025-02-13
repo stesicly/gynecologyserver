@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const nodemailer = require('nodemailer');
 const mysql = require("mysql");
 const https = require('https');
 const fs = require('fs');
@@ -10,8 +11,8 @@ const app = express();
 
 // Carica i certificati SSL
 const server = https.createServer({
-    key: fs.readFileSync('./certs/private-key.pem'),
-    cert: fs.readFileSync('./certs/certificate.pem')
+    key: fs.readFileSync('./certs/private-key.pem'),  // La chiave privata
+    cert: fs.readFileSync('./certs/certificate.pem')  // Il certificato
 }, app);
 
 
@@ -31,6 +32,45 @@ app.use(bodyParser.urlencoded({extended:true}))
 app.get("/", (require, response) => {
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
+
+// Configura il trasportatore per l'invio delle email (ad esempio, Gmail)
+const transporter = nodemailer.createTransport({
+    service: 'gmail', // O un altro servizio SMTP (Outlook, SMTP personalizzato, ecc.)
+    auth: {
+        user: 'stefano.siclari@gmail.com', // La tua email
+        pass: 'fjpu ogxf oonh xssj', // La tua password o password generata per app
+    },
+});
+
+// Endpoint per l'invio delle email
+app.post('/api/send-email', (req, res) => {
+    const { to, subject, body, attachment } = req.body;
+    console.log("provo a mandare la mail ", req.body)
+    // Opzioni dell'email
+    const mailOptions = {
+        from: 'stefano.siclari@gmail.com',
+        to: to,
+        subject: subject,
+        text: body/*,
+        attachments: [
+            {
+                filename: 'report.pdf',
+                content: attachment, // Puoi aggiungere qui il contenuto del PDF
+                encoding: 'base64',
+            },
+        ],*/
+    };
+
+    // Invia l'email
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.log(error);
+            return res.status(500).json({ message: 'Errore nell\'invio dell\'email' });
+        }
+        res.status(200).json({ message: 'Email inviata con successo', info });
+    });
+});
+
 
 app.post("/api/save/addItemToDropDownTable", (req, res)=>{
 
@@ -975,6 +1015,5 @@ app.listen(serverPath, ()=>{})
 // Avvia il server HTTP (Express + WebSocket)
 const PORT = 3001;
 server.listen(PORT, () => {
-    console.log(`Server HTTPS e WSS in ascolto su https://localhost:${PORT} e https://192.168.1.63:${PORT}`);
-
+    console.log(`✅ Server HTTPS e WSS in ascolto su https://mylocalserver.local:${PORT} e https://localhost:${PORT}`);
 });

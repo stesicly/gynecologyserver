@@ -62,3 +62,8 @@ Usa Let's Encrypt per ottenere certificati validi per il tuo dominio pubblico.
 Sostituisci i certificati generati da OpenSSL con quelli ottenuti da Let's Encrypt nella cartella certs.
 Configura il server con i nuovi certificati.
 Certbot si occupa anche di rinnovare automaticamente i certificati quando scadono.
+
+
+openssl genpkey -algorithm RSA -out ./certs/private-key.pem
+openssl req -new -key ./certs/private-key.pem -out ./certs/mycert.csr -config openssl.cnf
+openssl x509 -req -in ./certs/mycert.csr -signkey ./certs/private-key.pem -out ./certs/certificate.pem -days 365 -extensions v3_req -extfile openssl.cnf
