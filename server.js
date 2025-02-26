@@ -56,10 +56,8 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     const filePath = `/uploads/${req.file.filename}`;
 
     // Salva il file nel database con riferimento all'ID paziente
-    db.query("INSERT INTO patient_files (patient_id, file_path) VALUES (?, ?)", [patientId, filePath], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: "File caricato!", filePath });
-    });
+
+
 });
 
 // Configura il trasportatore per l'invio delle email (ad esempio, Gmail)
