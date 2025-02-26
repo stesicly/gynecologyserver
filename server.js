@@ -5,7 +5,10 @@ const nodemailer = require('nodemailer');
 const mysql = require("mysql");
 const https = require('https');
 const fs = require('fs');
-const { WebSocketServer } = require("ws"); // Importa WebSocket
+const path = require("path");
+const { WebSocketServer } = require("ws");
+const {diskStorage} = require("multer");
+const multer = require("multer"); // Importa WebSocket
 
 const app = express();
 
@@ -32,6 +35,32 @@ app.use(bodyParser.urlencoded({extended:true}))
 app.get("/", (require, response) => {
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
+
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configura Multer per salvare i file nella cartella 'uploads'
+const storage = diskStorage({
+    destination: "./uploads/",
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    }
+});
+const upload = multer({ storage });
+
+app.post("/api/upload", upload.single("file"), (req, res) => {
+    const { patientId } = req.body;
+    const filePath = `/uploads/${req.file.filename}`;
+
+    // Salva il file nel database con riferimento all'ID paziente
+    db.query("INSERT INTO patient_files (patient_id, file_path) VALUES (?, ?)", [patientId, filePath], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "File caricato!", filePath });
+    });
+});
 
 // Configura il trasportatore per l'invio delle email (ad esempio, Gmail)
 const transporter = nodemailer.createTransport({
