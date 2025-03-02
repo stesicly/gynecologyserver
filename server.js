@@ -301,6 +301,20 @@ app.post( "/api/dbms/logincheck", (req,res)=>{
     })
 })
 
+app.get("/api/get/typeofsheet", (req,res)=>{
+
+    const sqlSELECT =
+        "SELECT * " +
+        "FROM " +
+        "typeofsheet " +
+        "ORDER BY id";
+
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+
+})
+
 app.post("/api/get/visite", (req,res)=>{
     const codicePaziente = req.body.codicePaziente,
         dataFieldName = req.body.dataFieldName,
