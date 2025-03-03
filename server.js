@@ -181,15 +181,12 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
 
 app.post("/api/get/attachments", (req,res)=>{
     const codicePaziente = req.body.codicePaziente;
-    const sqlSELECT =        `SELECT * 
+    const nomeTabella = req.body.nomeTabella;
+    const sqlSELECT =        `SELECT attachments.id, attachments.filename, tos.name, ${nomeTabella}.DataVisitaGin 
         FROM attachments 
         INNER JOIN typeofsheet tos ON attachments.typeofsheet = tos.id 
-        LEFT JOIN (
-            SELECT name FROM typeofsheet WHERE id = (
-                SELECT typeofsheet FROM attachments WHERE CodicePaz = ?
-            )
-        )  as d ON a.some_column = d.some_column attachments.idvisit = dynamic_table_name.id 
-        WHERE CodicePaz=${codicePaziente}`
+        LEFT JOIN ${nomeTabella}  ON attachments.idvisit = ${nomeTabella}.id 
+        WHERE attachments.CodicePaz=${codicePaziente}`
 
 
     console.log("attachment sqlSELECT=>", sqlSELECT)
