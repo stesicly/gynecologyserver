@@ -179,6 +179,25 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
 
 });
 
+app.post("/api/get/attachments", (req,res)=>{
+    const codicePaziente = req.body.codicePaziente;
+    const sqlSELECT =        `SELECT * 
+        FROM attachments 
+        INNER JOIN typeofsheet tos ON attachments.typeofsheet = tos.id 
+        LEFT JOIN (
+            SELECT name FROM typeofsheet WHERE id = (
+                SELECT typeofsheet FROM attachments WHERE CodicePaz = ?
+            )
+        )  as d ON a.some_column = d.some_column attachments.idvisit = dynamic_table_name.id 
+        WHERE CodicePaz=${codicePaziente}`
+
+
+    console.log("attachment sqlSELECT=>", sqlSELECT)
+    db.query(sqlSELECT, (error,result)=>{
+        res.send(result)
+    })
+})
+
 app.get("/api/get/comuni", (req,res)=>{
     const sqlSELECT =
         "SELECT * " +
