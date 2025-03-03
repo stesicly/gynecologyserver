@@ -182,7 +182,9 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
 app.post("/api/get/attachments", (req,res)=>{
     const codicePaziente = req.body.codicePaziente;
     const nomeTabella = req.body.nomeTabella;
-    const sqlSELECT =        `SELECT attachments.id, attachments.filename, tos.name, ${nomeTabella}.DataVisitaGin 
+    const dateFieldName = req.body.dateFieldName;
+
+    const sqlSELECT = `SELECT attachments.id, attachments.filename, tos.name, ${nomeTabella}.${dateFieldName} 
         FROM attachments 
         INNER JOIN typeofsheet tos ON attachments.typeofsheet = tos.id 
         LEFT JOIN ${nomeTabella}  ON attachments.idvisit = ${nomeTabella}.id 
