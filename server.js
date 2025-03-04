@@ -37,26 +37,88 @@ app.get("/", (require, response) => {
 })
 
 
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = path.join(__dirname, "uploads");
+
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configura Multer per salvare i file nella cartella 'uploads'
-const storage = diskStorage({
-    destination: "./uploads/",
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-app.post("/api/upload", upload.single("file"), (req, res) => {
-    const { patientId } = req.body;
-    const filePath = `/uploads/${req.file.filename}`;
 
-    // Salva il file nel database con riferimento all'ID paziente
+app.post("/api/upload", upload.array("files", 20), (req, res) => {
+    const { codicePaziente, idTab, idVisit } = req.body;
 
+    if (!codicePaziente && !idVisit) {
+        return res.status(400).json({ error: "codicePaziente o idVisit mancante" });
+    }
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: "Nessun file caricato" });
+    }
+    const patientDir = path.join(uploadDir, codicePaziente, idTab, idVisit || "");
+    if (!fs.existsSync(patientDir)) {
+        fs.mkdirSync(patientDir, { recursive: true });
+    }
+
+    let errorOccurred = false;
+    let filesToDelete = [];
+console.log("req.files===>", req.files.length, req.files)
+    const uploadPromises = req.files.map((file) => {
+        return new Promise((resolve, reject) => {
+            const tempFilePath = file.path;  // Questo è il percorso temporaneo
+            const finalFilePath = path.join(patientDir, file.originalname); // Utilizza file.originalname per il nome del file finale
+
+
+            // Prima spostiamo il file
+            console.log("finalFilePath=>>%o - %o", file.originalname, finalFilePath);
+            fs.writeFile(finalFilePath, file.buffer, (err) => {
+                if (err) {
+                    errorOccurred = true;
+                    filesToDelete.push(tempFilePath); // Aggiungi il file temporaneo da eliminare se c'è stato un errore nello spostamento
+                    return reject(new Error(`Errore nel spostare il file ${file.originalname}: ${err.message}`));
+                }
+                // Solo dopo che il file è stato spostato correttamente, inseriamo nel DB
+                const sqlINSERT = `INSERT INTO attachments(CodicePaz, filename, typeofsheet, idvisit) 
+                                   VALUES (?, ?, ?, ?)`;
+
+                console.log("sqlINSERT=>>%o ", sqlINSERT);
+                db.query(sqlINSERT, [codicePaziente, file.originalname, idTab, idVisit || 0], (error) => {
+                    if (error) {
+                        errorOccurred = true;
+                        filesToDelete.push(finalFilePath); // Aggiungi il file finale da eliminare in caso di errore nel DB
+                        fs.unlinkSync(finalFilePath); // Rimuovi il file appena spostato
+                        return reject(new Error(`Errore nella query SQL per il file ${file.originalname}: ${error.message}`));
+                    }
+                    resolve(`File ${file.originalname} caricato e spostato con successo!`);
+                });
+            });
+        });
+    });
+
+    // Attendere tutte le promesse di caricamento file
+    Promise.all(uploadPromises)
+        .then(() => {
+            // Se c'è stato un errore, cancella i file temporanei
+            if (errorOccurred) {
+                filesToDelete.forEach(filePath => {
+                    fs.unlinkSync(filePath); // Rimuovi il file temporaneo
+                });
+                return res.status(500).json({ error: "Errore durante il caricamento di alcuni file" });
+            }
+
+            // Rispondi se tutto è andato bene
+            res.status(200).json({ message: "Tutti i file sono stati caricati con successo!" });
+        })
+        .catch((error) => {
+            // Se una promessa ha fallito, cancella i file temporanei
+            filesToDelete.forEach(filePath => {
+                fs.unlinkSync(filePath); // Rimuovi il file temporaneo
+            });
+
+            // Rispondi con un errore
+            res.status(500).json({ error: error.message });
+        });
 
 });
 
@@ -181,17 +243,20 @@ app.post("/api/del/delItemToDropDownTable", (req, res)=>{
 
 app.post("/api/get/attachments", (req,res)=>{
     const codicePaziente = req.body.codicePaziente;
-    const nomeTabella = req.body.nomeTabella;
+    const idTab = req.body.idTab;
     const dateFieldName = req.body.dateFieldName;
+    const idVisit = req.body.idVisit;
 
-    const sqlSELECT = `SELECT attachments.id, attachments.filename, tos.name, ${nomeTabella}.${dateFieldName} 
+    let sqlSELECT = `
+        SELECT attachments.id, filename, typeofsheet.name, idvisit, typeofsheet.id as idtab
         FROM attachments 
-        INNER JOIN typeofsheet tos ON attachments.typeofsheet = tos.id 
-        LEFT JOIN ${nomeTabella}  ON attachments.idvisit = ${nomeTabella}.id 
-        WHERE attachments.CodicePaz=${codicePaziente}`
+            INNER JOIN typeofsheet ON attachments.typeofsheet=typeofsheet.id
+        WHERE CodicePaz=${codicePaziente} `;
 
+    if (idTab && idVisit){
+        sqlSELECT += ` and typeofsheet=${idTab} and idvisit=${idvisit}`
+    }
 
-    console.log("attachment sqlSELECT=>", sqlSELECT)
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
@@ -414,7 +479,6 @@ app.post("/api/save/defaults", (req,res)=>{
     const defaults = req.body.defaults,
         fields = [],
         values = [];
-    console.log(defaults);
     db.query(sqlSELECT, (error,result)=>{
         if (!error){
             if (result && result[0] && result[0].addome){
@@ -424,7 +488,7 @@ app.post("/api/save/defaults", (req,res)=>{
                 }
                 sqlSELECT= "UPDATE defaults " +
                     "SET " + values.join(",");
-                console.log("UPDATE defaults===> ", sqlSELECT)
+                //console.log("UPDATE defaults===> ", sqlSELECT)
                 db.query(sqlSELECT, (error,result)=>{
                     res.send(result)})
             }
@@ -439,7 +503,7 @@ app.post("/api/save/defaults", (req,res)=>{
                 sqlSELECT = "INSERT INTO defaults (" + fields.join(",") + ") " +
                     "VALUES  (" + values.join(",") + ") ";
 
-                console.log("INSERT defaults ===> ", sqlSELECT)
+                //console.log("INSERT defaults ===> ", sqlSELECT)
                 db.query(sqlSELECT, (error,result)=>{
                     res.send(result)}
                 )
@@ -1023,13 +1087,13 @@ const wss = new WebSocketServer({ server });
 
 wss.on("connection", (ws, req) => {
     const ip = req.socket.remoteAddress;
-    console.log(`Nuova connessione WebSocket da ${ip}`);
+    //console.log(`Nuova connessione WebSocket da ${ip}`);
 
     ws.send(JSON.stringify({ message: "Connessione WebSocket stabilita" }));
 
     // Quando il server riceve un messaggio dal client
     ws.on("message", (message) => {
-        console.log(`Messaggio ricevuto: ${message}`);
+        //console.log(`Messaggio ricevuto: ${message}`);
 
         // Gestisci il messaggio in base al tipo di richiesta
         try {
@@ -1062,7 +1126,7 @@ wss.on("connection", (ws, req) => {
 
 
     ws.on("close", () => {
-        console.log(`WebSocket chiuso per ${ip}`);
+        //console.log(`WebSocket chiuso per ${ip}`);
     });
 });
 
