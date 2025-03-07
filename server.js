@@ -248,11 +248,36 @@ app.post("/api/get/attachments", (req,res)=>{
     const idVisit = req.body.idVisit;
 
     let sqlSELECT = `
-        SELECT attachments.id, filename, typeofsheet.name, idvisit, typeofsheet.id as idtab
-        FROM attachments 
-            INNER JOIN typeofsheet ON attachments.typeofsheet=typeofsheet.id
-        WHERE CodicePaz=${codicePaziente} `;
+        SELECT a.id, filename, t.name, idvisit, t.id as idtab, COALESCE(g.DataVisitaGin, o.DataVisitaOst, s.DataEsameSen) AS datavisita
 
+        FROM attachments a
+                 INNER JOIN typeofsheet t ON a.typeofsheet=t.id
+
+                 LEFT JOIN ginecologica g ON a.idvisit = g.id AND t.name = "ginecologica"
+                 LEFT JOIN ostetrica o ON a.idvisit = o.id AND t.name = "ostetrica"
+                 LEFT JOIN senologica s ON a.idvisit = s.id AND t.name = "senologica"
+
+        WHERE a.CodicePaz=${codicePaziente}
+        order by filename `;
+
+    let sqlTEST = `SET @sql = NULL;
+            SELECT GROUP_CONCAT(
+                CONCAT(' LEFT JOIN ', name, ' AS t ON t.id = t1.ref_id') 
+                SEPARATOR ' '
+            ) INTO @joins
+            FROM tabella_switch;
+            
+            SET @final_query = CONCAT(
+                'SELECT t1.*, t.nomecampo 
+                 FROM tabella1 t1 
+                 ', @joins, ';'
+            );
+            
+            PREPARE stmt FROM @final_query;
+            EXECUTE stmt;
+            DEALLOCATE PREPARE stmt;`
+
+    console.log("sqlTEST====> ", sqlTEST)
     if (idTab && idVisit){
         sqlSELECT += ` and typeofsheet=${idTab} and idvisit=${idvisit}`
     }
