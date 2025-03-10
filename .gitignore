@@ -11,3 +11,4 @@
 /.idea/vcs.xml
 /server.zip
 /node_modules/
+/config.nogit.js

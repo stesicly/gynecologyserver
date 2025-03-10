@@ -1,14 +1,17 @@
-const express = require("express");
-const cors = require("cors");
 const bodyParser = require("body-parser");
-const nodemailer = require('nodemailer');
-const mysql = require("mysql");
-const https = require('https');
+const cors = require("cors");
+const express = require("express");
 const fs = require('fs');
+const https = require('https');
+const mysql = require("mysql");
+const multer = require("multer"); // Importa WebSocket
+const nodemailer = require('nodemailer');
 const path = require("path");
 const { WebSocketServer } = require("ws");
 const {diskStorage} = require("multer");
-const multer = require("multer"); // Importa WebSocket
+const { generatePdf } = require("./api/prints/generate-pdf");
+
+const config = require("./config.nogit.js");
 
 const app = express();
 
@@ -18,13 +21,17 @@ const server = https.createServer({
     cert: fs.readFileSync('./certs/certificate.pem')  // Il certificato
 }, app);
 
-
+console.log("config.DB.host====>", config.DB.host)
+console.log("config.DB.user====>", config.DB.user)
+console.log("config.DB.password====>", config.DB.password)
+console.log("config.DB.port====>", config.DB.port)
+console.log("config.DB.database====>", config.DB.database)
 const db = mysql.createPool({
-    host    : "localhost",
-    user    : "root",
-    password: "",
-    port : 3306,
-    database: "gynecology"
+    host    : config.DB.host,
+    user    : config.DB.user,
+    password: config.DB.password,
+    port : config.DB.port,
+    database: config.DB.database
 })
 
 
@@ -35,6 +42,33 @@ app.use(bodyParser.urlencoded({extended:true}))
 app.get("/", (require, response) => {
     response.send("<h1>hello worldddd {process.env.NODE_ENV}</h1>")
 })
+
+app.post('/generate-pdf', async (req, res) => {
+    const { nomeUtente, indirizzo } = req.body; // Dati inviati dalla tua applicazione React
+
+    try {
+        // Usa la funzione per creare il PDF
+        const pdfBytes = await generatePdf({
+            nomeUtente : nomeUtente,
+            indirizzo : indirizzo,
+            visita : "ginecologica"
+        });
+
+        // Imposta il tipo di contenuto della risposta come PDF
+        res.set({
+            "Content-Type": "application/pdf",
+            "Content-Disposition": "attachment; filename=report.pdf",
+            "Content-Length": pdfBytes.length // Imposta la lunghezza del file
+        });
+
+        // Invia il PDF modificato come buffer
+        res.send(pdfBytes);
+
+    } catch (error) {
+        console.error('Errore durante la creazione del PDF:', error);
+        res.status(500).send('Errore nel generare il PDF');
+    }
+});
 
 
 const uploadDir = path.join(__dirname, "uploads");
@@ -124,30 +158,37 @@ console.log("req.files===>", req.files.length, req.files)
 
 // Configura il trasportatore per l'invio delle email (ad esempio, Gmail)
 const transporter = nodemailer.createTransport({
-    service: 'gmail', // O un altro servizio SMTP (Outlook, SMTP personalizzato, ecc.)
+    service: config.EMAIL_PROVIDER, // O un altro servizio SMTP (Outlook, SMTP personalizzato, ecc.)
     auth: {
-        user: 'stefano.siclari@gmail.com', // La tua email
-        pass: 'fjpu ogxf oonh xssj', // La tua password o password generata per app
-    },
+        user: config.EMAIL_USER, // La tua email
+        pass: config.EMAIL_PASS, // La tua password o password generata per app
+    }
 });
 
 // Endpoint per l'invio delle email
-app.post('/api/send-email', (req, res) => {
+app.post('/api/send-email', async(req, res) => {
     const { to, subject, body, attachment } = req.body;
     console.log("provo a mandare la mail ", req.body)
+
+    const pdfBytes = await generatePdf({
+        nomeUtente: "Comito Irene",
+        indirizzo: "via Roma 11",
+        visita: "ginecologica"
+    });
     // Opzioni dell'email
     const mailOptions = {
-        from: 'stefano.siclari@gmail.com',
+        from: config.EMAIL_USER,
         to: to,
+        cc : "siclaristefano@yahoo.it",
         subject: subject,
-        text: body/*,
+        text: body,
         attachments: [
             {
                 filename: 'report.pdf',
-                content: attachment, // Puoi aggiungere qui il contenuto del PDF
-                encoding: 'base64',
+                content: pdfBytes, // Il buffer del PDF
+                encoding: 'base64', // Specifica l'encoding corretto
             },
-        ],*/
+        ]
     };
 
     // Invia l'email
@@ -609,7 +650,7 @@ app.post("/api/get/getLastVisitForPrint", (req,res)=>{
             break;
     }
 
-
+    /*console.log("getLastVisitForPrint last visit of %o ===> %o", nomeTabella, sqlSELECT)*/
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
