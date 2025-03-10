@@ -1,12 +1,14 @@
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const express = require("express");
+const Docxtemplater = require('docxtemplater'); // Per manipolare il file .docx
 const fs = require('fs');
 const https = require('https');
 const mysql = require("mysql");
 const multer = require("multer"); // Importa WebSocket
 const nodemailer = require('nodemailer');
 const path = require("path");
+const PizZip = require('pizzip'); // Per leggere i file .docx
 const { WebSocketServer } = require("ws");
 const {diskStorage} = require("multer");
 const { generatePdf } = require("./api/prints/generate-pdf");
@@ -67,6 +69,43 @@ app.post('/generate-pdf', async (req, res) => {
     } catch (error) {
         console.error('Errore durante la creazione del PDF:', error);
         res.status(500).send('Errore nel generare il PDF');
+    }
+});
+
+app.post('/generate-docx', async (req, res) => {
+    const { nomeUtente, indirizzo, visita } = req.body; // Dati inviati dalla tua applicazione React
+
+    try {
+        // Carica il template .docx
+        const content = fs.readFileSync("./api/prints/visita-ginecologica.docx", 'binary');
+        const zip = new PizZip(content);
+        const doc = new Docxtemplater(zip);
+
+        // Imposta i dati dinamici
+        doc.setData({
+            nomeUtente: nomeUtente,
+            indirizzo: indirizzo
+        });
+
+        // Esegui il rendering del documento
+        doc.render();
+
+        // Ottieni il file .docx risultante
+        const output = doc.getZip().generate({ type: 'nodebuffer' });
+
+        // Imposta le intestazioni per il download del file
+        res.set({
+            "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "Content-Disposition": `attachment; filename=report-${nomeUtente}.docx`,
+            "Content-Length": output.length
+        });
+
+        // Invia il file .docx come buffer
+        res.send(output);
+
+    } catch (error) {
+        console.error('Errore durante la creazione del documento Word:', error);
+        res.status(500).send('Errore nel generare il documento Word');
     }
 });
 
