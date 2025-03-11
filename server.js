@@ -1,7 +1,8 @@
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const express = require("express");
 const Docxtemplater = require('docxtemplater'); // Per manipolare il file .docx
+const { exec } = require("child_process");
+const express = require("express");
 const fs = require('fs');
 const https = require('https');
 const mysql = require("mysql");
@@ -14,6 +15,7 @@ const {diskStorage} = require("multer");
 const { generatePdf } = require("./api/prints/generate-pdf");
 
 const config = require("./config.nogit.js");
+const {generateDoc} = require("./api/prints/hub-doc");
 
 const app = express();
 
@@ -23,11 +25,7 @@ const server = https.createServer({
     cert: fs.readFileSync('./certs/certificate.pem')  // Il certificato
 }, app);
 
-console.log("config.DB.host====>", config.DB.host)
-console.log("config.DB.user====>", config.DB.user)
-console.log("config.DB.password====>", config.DB.password)
-console.log("config.DB.port====>", config.DB.port)
-console.log("config.DB.database====>", config.DB.database)
+
 const db = mysql.createPool({
     host    : config.DB.host,
     user    : config.DB.user,
@@ -36,8 +34,9 @@ const db = mysql.createPool({
     database: config.DB.database
 })
 
-
-app.use(cors());
+app.use(cors({
+    exposedHeaders: ['Content-Disposition']
+}));
 app.use(express.json())
 app.use(bodyParser.urlencoded({extended:true}))
 
@@ -72,7 +71,7 @@ app.post('/generate-pdf', async (req, res) => {
     }
 });
 
-app.post('/generate-docx', async (req, res) => {
+app.post('/generate-docxold', async (req, res) => {
     const { nomeUtente, indirizzo, visita } = req.body; // Dati inviati dalla tua applicazione React
 
     try {
@@ -96,7 +95,7 @@ app.post('/generate-docx', async (req, res) => {
         // Imposta le intestazioni per il download del file
         res.set({
             "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "Content-Disposition": `attachment; filename=report-${nomeUtente}.docx`,
+            "Content-Disposition": `attachment; filename=visita-ginecologica-${nomeUtente}.docx`,
             "Content-Length": output.length
         });
 
@@ -109,6 +108,37 @@ app.post('/generate-docx', async (req, res) => {
     }
 });
 
+app.post('/generate-doc', async (req, res) => {
+    const { nomeUtente, indirizzo } = req.body;
+
+    const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
+    const outputDir = path.join(__dirname, 'temp');
+
+    try {
+        // Genera il documento e convertilo in PDF
+        const { pdfData, filename } = await generateDoc(nomeUtente, indirizzo, templatePath, outputDir);
+        console.log("filename====>", filename)
+        // Verifica che pdfData sia valido e che il PDF esista
+        if (!pdfData || pdfData.length === 0) {
+            console.log('Errore: il PDF generato è vuoto.');
+            return res.status(500).send('Errore nella generazione del PDF.');
+        }
+
+        // Imposta le intestazioni per il download del file PDF
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+            'Content-Length': pdfData.length
+        });
+
+        // Invia il PDF come risposta
+        res.send(pdfData);
+
+    } catch (error) {
+        console.error('Errore durante la generazione o la conversione:', error);
+        res.status(500).send('Errore nel generare il documento o nel convertirlo in PDF');
+    }
+});
 
 const uploadDir = path.join(__dirname, "uploads");
 
