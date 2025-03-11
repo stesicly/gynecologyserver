@@ -6,6 +6,8 @@
 /package.json
 /package-lock.json
 
+/uploads
+/temp
 /.idea/server.iml
 
 /.idea/vcs.xml
