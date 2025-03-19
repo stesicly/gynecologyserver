@@ -17,6 +17,8 @@ const { generatePdf } = require("./api/prints/generate-pdf");
 const config = require("./config.nogit.js");
 const {generateDoc} = require("./api/prints/hub-doc");
 
+
+
 const app = express();
 
 // Carica i certificati SSL
@@ -235,7 +237,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // Endpoint per l'invio delle email
-app.post('/api/send-email', async(req, res) => {
+app.post('/api/send-emailold', async(req, res) => {
     const { to, subject, body, attachment } = req.body;
     console.log("provo a mandare la mail ", req.body)
 
@@ -270,6 +272,79 @@ app.post('/api/send-email', async(req, res) => {
     });
 });
 
+app.post('/api/send-emailold2x', async (req, res) => {
+    const { to, subject, body, attachment } = req.body;
+    console.log("Dati ricevuti per inviare l'email:", req.body);
+
+    // Opzioni dell'email
+    const mailOptions = {
+        from: config.EMAIL_USER,
+        to: to,
+        cc: "siclaristefano@yahoo.it",  // Aggiungi eventuali destinatari in CC
+        subject: subject,
+        text: body,
+        attachments: [
+            {
+                filename: 'report.pdf',  // Puoi personalizzare il nome del file
+                content: attachment//, Il buffer ricevuto dal client
+                //encoding: 'base64',  // Usa l'encoding corretto
+            }
+        ]
+    };
+
+    // Invia l'email
+    try {
+        // Invia l'email e aspetta il risultato
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email inviata con successo:', info);
+        return res.status(200).json({ message: 'Email inviata con successo', info });
+    } catch (error) {
+        console.error('Errore nell\'invio dell\'email:', error);
+        return res.status(500).json({ message: 'Errore nell\'invio dell\'email', error });
+    }
+});
+
+app.post('/api/send-email', async (req, res) => {
+    try {
+        const { to, subject, body, nomeUtente, indirizzo } = req.body;
+        const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
+        const outputDir = path.join(__dirname, 'temp');
+
+        // Genera il documento e convertilo in PDF
+        const { pdfData, filename } = await generateDoc(nomeUtente, indirizzo, templatePath, outputDir);
+        console.log("PDF generato per l'email:", filename);
+
+        if (!pdfData || pdfData.length === 0) {
+            console.log('Errore: il PDF generato è vuoto.');
+            return res.status(500).send('Errore nella generazione del PDF.');
+        }
+
+        // Configura l'email con il PDF allegato
+        const mailOptions = {
+            from: config.EMAIL_USER,
+            to: to,
+            cc: "siclaristefano@yahoo.it",
+            subject: subject,
+            text: body,
+            attachments: [
+                {
+                    filename: filename,
+                    content: pdfData
+                }
+            ]
+        };
+
+        // Invia l'email
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email inviata con successo:', info);
+
+        return res.status(200).json({ message: 'Email inviata con successo', info });
+
+    } catch (error) {
+        console.error("Errore nell'invio dell'email:", error);
+        return res.status(500).json({ message: 'Errore nell\'invio dell\'email' });
+    }
+});
 
 app.post("/api/save/addItemToDropDownTable", (req, res)=>{
 
