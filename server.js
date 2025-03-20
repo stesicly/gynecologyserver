@@ -15,7 +15,7 @@ const {diskStorage} = require("multer");
 const { generatePdf } = require("./api/prints/generate-pdf");
 
 const config = require("./config.nogit.js");
-const {generateDoc} = require("./api/prints/hub-doc");
+const {generateDoc, createQueryForPrint} = require("./api/prints/hub-doc");
 
 
 
@@ -97,7 +97,7 @@ app.post('/generate-docxold', async (req, res) => {
         // Imposta le intestazioni per il download del file
         res.set({
             "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "Content-Disposition": `attachment; filename=visita-ginecologica-${nomeUtente}.docx`,
+            "Content-Disposition": `attachment; filename=visita-ginecologica-${nomeUtente}.odt`,
             "Content-Length": output.length
         });
 
@@ -111,14 +111,14 @@ app.post('/generate-docxold', async (req, res) => {
 });
 
 app.post('/generate-doc', async (req, res) => {
-    const { nomeUtente, indirizzo } = req.body;
+    const { codicePaz, visita, typeofsheet } = req.body;
 
     const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
     const outputDir = path.join(__dirname, 'temp');
 
     try {
         // Genera il documento e convertilo in PDF
-        const { pdfData, filename } = await generateDoc(nomeUtente, indirizzo, templatePath, outputDir);
+        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
         console.log("filename====>", filename)
         // Verifica che pdfData sia valido e che il PDF esista
         if (!pdfData || pdfData.length === 0) {
@@ -311,7 +311,7 @@ app.post('/api/send-email', async (req, res) => {
         const outputDir = path.join(__dirname, 'temp');
 
         // Genera il documento e convertilo in PDF
-        const { pdfData, filename } = await generateDoc(nomeUtente, indirizzo, templatePath, outputDir);
+        const { pdfData, filename } = await generateDoc(db, nomeUtente, indirizzo, templatePath, outputDir);
         console.log("PDF generato per l'email:", filename);
 
         if (!pdfData || pdfData.length === 0) {
@@ -723,76 +723,7 @@ app.post("/api/save/defaults", (req,res)=>{
 })
 
 app.post("/api/get/getLastVisitForPrint", (req,res)=>{
-    const
-        codicePaziente = req.body.codicePaziente,
-        nomeTabella = req.body.nomeTabella,
-        codiceVisita = req.body.codiceVisita,
-        testForLast = !isNaN(codiceVisita) && codiceVisita!==-1 ? " and id=" + codiceVisita + " " : " "
-
-    let sqlSELECT;
-    switch(nomeTabella){
-        case "ginecologica":
-            sqlSELECT = "SELECT id, contraccezione.Tipo as `Contraccezione`, `TerOrmRad`, `PatGinPregr`, `IntervGin`, `UltimoCPT`, " +
-                "`Esito`, `UltimaMx`, `EsitoMx`, `DataVisitaGin`, `UMGin`, motivovisita.Tipo as `MotivoVisita`, " +
-                "sintomi.Tipo as `Sintomi`, genesterni.Tipo as `GenEsterni`, vagina.Tipo as `Vagina`, `ColloUtero`, " +
-                "`CorpoUtero`, `Annessi`, `Addome`, `Speculum`, seno.Tipo as `Seno`, `Prescrizioni`, `Accertamenti`, `NoteGin`, `ConclInd`," +
-                "ecooffice.Tipo as 'ecooffice', utero, endometrio, annessodx, annessosx " +
-                "FROM `ginecologica` " +
-                "LEFT JOIN contraccezione ON ginecologica.Contraccezione=contraccezione.Codice " +
-                "LEFT JOIN motivovisita ON ginecologica.MotivoVisita=motivovisita.Codice " +
-                "LEFT JOIN sintomi ON ginecologica.Sintomi=sintomi.Codice " +
-                "LEFT JOIN genesterni ON ginecologica.GenEsterni=genesterni.Codice " +
-                "LEFT JOIN vagina ON ginecologica.Vagina=vagina.Codice " +
-                "LEFT JOIN seno ON ginecologica.Seno=seno.Codice " +
-                "LEFT JOIN ecooffice ON ginecologica.ecooffice=ecooffice.Codice " +
-                "WHERE CodicePaz=" + codicePaziente + testForLast +
-                "ORDER BY id DESC LIMIT 1";
-            break;
-
-        case "ostetrica":
-            sqlSELECT = "SELECT `id`, `CodicePaz`, `DataVisitaOst`, motivovisitaost.Tipo as `MotivoVisitaOst`, " +
-                        "anamposnegh.Tipo as `HIVOst`, anamidrs.Tipo as `RosoliaOst`, epatiteb.Tipo as `EpatiteBOst`, `dataEpB`, " +
-                        "anamposneg.Tipo as `EpatiteCOst`, `dataEpC`, anamidr.Tipo as`ToxoOst`, trattotal.Tipo as `TrattoTalOst`, `dataUltimi`, " +
-                        "`UltimiEsami`, `DataUltimaEcog`, `UltimaEcog`, `PAOS`, `BCF`, `Edemi`, addome.Tipo as `AddomeOst`, colloutero.Tipo as `ColloUtOst`, " +
-                        "corpoutero.Tipo as `CorpoUtOst`, speculum.Tipo as `SpeculumOst`,partepresentata.Tipo as `PartePresentata`, " +
-                        "situazioneost.Tipo as `Situazione`, membrane.Tipo as `Membrane`, esbattvag.Tipo as `EsBattVag`, `UMDich`, `EPPDich`, `UmEco`, `EPPEco`, " +
-                        "`Prescrizioni`, `Accertamenti`, `NoteOst`, `ConclInd`, testintcomb, datatestintcomb, testgenetico.Tipo as 'testgenvalue' , " +
-                        "testgen, datatestgen, ecoofficeost  " +
-                "FROM `ostetrica` " +
-                "LEFT JOIN motivovisitaost ON ostetrica.MotivoVisitaOst=motivovisitaost.Codice " +
-                "LEFT JOIN addome ON ostetrica.AddomeOst=addome.Codice " +
-                "LEFT JOIN anamposnegh ON ostetrica.HIVOst=anamposnegh.Codice " +
-                "LEFT JOIN anamidrs ON ostetrica.RosoliaOst=anamidrs.Codice " +
-                "LEFT JOIN colloutero ON ostetrica.ColloUtOst=colloutero.Codice " +
-                "LEFT JOIN corpoutero ON ostetrica.CorpoUtOst=corpoutero.Codice " +
-                "LEFT JOIN epatiteb ON ostetrica.EpatiteBOst=epatiteb.Codice " +
-                "LEFT JOIN anamposneg ON ostetrica.EpatiteCOst=anamposneg.Codice " +
-                "LEFT JOIN anamidr ON ostetrica.ToxoOst=anamidr.Codice " +
-                "LEFT JOIN esbattvag ON ostetrica.EsBattVag=esbattvag.Codice " +
-                "LEFT JOIN membrane ON ostetrica.Membrane=membrane.Codice " +
-
-                "LEFT JOIN partepresentata ON ostetrica.PartePresentata=partepresentata.Codice " +
-                "LEFT JOIN situazioneost ON ostetrica.Situazione=situazioneost.Codice " +
-
-                "LEFT JOIN speculum ON ostetrica.SpeculumOst=speculum.Codice " +
-                "LEFT JOIN trattotal ON ostetrica.TrattoTalOst=trattotal.Codice " +
-                "LEFT JOIN testgenetico ON ostetrica.testgenvalue=testgenetico.Codice " +
-                "WHERE CodicePaz=" + codicePaziente + testForLast +
-                "ORDER BY id DESC LIMIT 1";
-            break;
-
-        case "senologica":
-            sqlSELECT = "SELECT * FROM senologica " +
-                "WHERE CodicePaz=" + codicePaziente +  testForLast +
-                "ORDER BY id DESC LIMIT 1";
-            break;
-
-        case "colposcopia":
-            sqlSELECT = "SELECT * FROM colposcopia " +
-                "WHERE CodicePaz=" + codicePaziente + " " +
-                "ORDER BY CodicePaz DESC";
-            break;
-    }
+    const sqlSELECT = createQueryForPrint(req.body.nomeTabella, req.body.codicePaziente, req.body.codiceVisita )
 
     /*console.log("getLastVisitForPrint last visit of %o ===> %o", nomeTabella, sqlSELECT)*/
     db.query(sqlSELECT, (error,result)=>{
@@ -1057,7 +988,12 @@ app.get("/api/get/allpatientsOld", (req, res)=>{
         "elencocitta.CAP, " +
         "elencoprov.SiglaProvincia as provcitta, " +
         "paziente.* " +
-        "FROM paziente LEFT JOIN elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune LEFT JOIN elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia LEFT JOIN elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune LEFT JOIN elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia ORDER BY Cognome, Nome";
+        "FROM paziente " +
+        "LEFT JOIN elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune " +
+        "LEFT JOIN elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia " +
+        "LEFT JOIN elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune " +
+        "LEFT JOIN elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia " +
+        "ORDER BY Cognome, Nome";
     db.query(sqlSELECT, (error,result)=>{
         res.send(result)
     })
