@@ -111,86 +111,86 @@ const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outp
 
 
     console.log("queryForVisit===>", queryForVisit)
-return new Promise(async(resolve, reject) => {
-    try {
-        // Carica il template .docx
-        const [resultsForPatient, resultsForVisit] = await Promise.all([
-            execQuery(queryForPatient, [codicePaz]),
-            execQuery(queryForVisit, [isNaN ? codicePaz : visita])
-        ]);
+    return new Promise(async(resolve, reject) => {
+        try {
+            // Carica il template .docx
+            const [resultsForPatient, resultsForVisit] = await Promise.all([
+                execQuery(queryForPatient, [codicePaz]),
+                execQuery(queryForVisit, [isNaN ? codicePaz : visita])
+            ]);
 
-        // Verifica risultati
-        if (resultsForPatient.length === 0 || resultsForVisit.length === 0) {
-            throw new Error('Dati non trovati');
-        }
-
-        console.log("visita====> ", resultsForVisit)
-
-        const paziente = resultsForPatient[0];
-        const visitaFromDB =  resultsForVisit[0]
-        const nomeUtente = paziente.Cognome + "-" + paziente.Nome;
-
-        const dati = {
-            nomeUtente: `${paziente.Cognome} ${paziente.Nome}`,
-            indirizzo: paziente.Via + ", " + paziente.NomeComune,
-            ...visitaFromDB
-        };
-
-        const content = fs.readFileSync(templatePath, 'binary');
-        const zip = new PizZip(content);
-        const doc = new Docxtemplater(zip);
-
-        // Imposta i dati dinamici
-        doc.setData(dati);
-
-        // Esegui il rendering del documento
-        doc.render();
-
-        // Ottieni il file .docx risultante
-        const outputDOC = doc.getZip().generate({ type: 'nodebuffer' });
-
-        // Crea la cartella temporanea per il file docx
-        if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir);
-        }
-
-        // Definisci il percorso del file .docx
-        const docPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.docx`);
-
-        // Salva il file .docx sul server
-        fs.writeFileSync(docPath, outputDOC);
-
-        // Aggiungi il percorso di LibreOffice (soffice) al PATH (puoi configurarlo in base al sistema)
-        const libreOfficePath = 'C:\\Program Files\\LibreOffice\\program'; // Adatta per il tuo sistema
-        const command = `"${path.join(libreOfficePath, 'soffice.exe')}" --headless --convert-to pdf --outdir ${outputDir} ${docPath}`;
-
-        // Esegui il comando di conversione
-        exec(command, { env: { PATH: process.env.PATH + `:${libreOfficePath}` } }, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Errore nella conversione: ${stderr}`);
-                return reject(new Error('Errore durante la conversione del documento in PDF'));
+            // Verifica risultati
+            if (resultsForPatient.length === 0 || resultsForVisit.length === 0) {
+                throw new Error('Dati non trovati');
             }
 
-            // Percorso del PDF generato (usando il nome dell'utente)
-            const pdfPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.pdf`);
+            console.log("visita====> ", resultsForVisit)
 
-            // Verifica che il PDF sia stato creato
-            if (fs.existsSync(pdfPath)) {
-                const pdfData = fs.readFileSync(pdfPath);
-                resolve({ pdfData, filename: `visita-ginecologica-${nomeUtente}.pdf` });  // Restituisci anche il nome del file
-            } else {
-                console.error('Errore: Il PDF non è stato trovato.');
-                reject(new Error('Errore durante la creazione del PDF.'));
+            const paziente = resultsForPatient[0];
+            const visitaFromDB =  resultsForVisit[0]
+            const nomeUtente = paziente.Cognome + "-" + paziente.Nome;
+
+            const dati = {
+                nomeUtente: `${paziente.Cognome} ${paziente.Nome}`,
+                indirizzo: paziente.Via + ", " + paziente.NomeComune,
+                ...visitaFromDB
+            };
+
+            const content = fs.readFileSync(templatePath, 'binary');
+            const zip = new PizZip(content);
+            const doc = new Docxtemplater(zip);
+
+            // Imposta i dati dinamici
+            doc.setData(dati);
+
+            // Esegui il rendering del documento
+            doc.render();
+
+            // Ottieni il file .docx risultante
+            const outputDOC = doc.getZip().generate({ type: 'nodebuffer' });
+
+            // Crea la cartella temporanea per il file docx
+            if (!fs.existsSync(outputDir)) {
+                fs.mkdirSync(outputDir);
             }
-        });
+
+            // Definisci il percorso del file .docx
+            const docPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.docx`);
+
+            // Salva il file .docx sul server
+            fs.writeFileSync(docPath, outputDOC);
+
+            // Aggiungi il percorso di LibreOffice (soffice) al PATH (puoi configurarlo in base al sistema)
+            const libreOfficePath = 'C:\\Program Files\\LibreOffice\\program'; // Adatta per il tuo sistema
+            const command = `"${path.join(libreOfficePath, 'soffice.exe')}" --headless --convert-to pdf --outdir ${outputDir} ${docPath}`;
+
+            // Esegui il comando di conversione
+            exec(command, { env: { PATH: process.env.PATH + `:${libreOfficePath}` } }, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Errore nella conversione: ${stderr}`);
+                    return reject(new Error('Errore durante la conversione del documento in PDF'));
+                }
+
+                // Percorso del PDF generato (usando il nome dell'utente)
+                const pdfPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.pdf`);
+
+                // Verifica che il PDF sia stato creato
+                if (fs.existsSync(pdfPath)) {
+                    const pdfData = fs.readFileSync(pdfPath);
+                    resolve({ pdfData, filename: `visita-ginecologica-${nomeUtente}.pdf` });  // Restituisci anche il nome del file
+                } else {
+                    console.error('Errore: Il PDF non è stato trovato.');
+                    reject(new Error('Errore durante la creazione del PDF.'));
+                }
+            });
 
 
 
 
-    } catch (error) {
-        console.error('Errore durante la creazione o la stampa del documento:', error);
-        reject(new Error('Errore nel generare il documento o nel convertirlo in PDF'));
-    }
+        } catch (error) {
+            console.error('Errore durante la creazione o la stampa del documento:', error);
+            reject(new Error('Errore nel generare il documento o nel convertirlo in PDF'));
+        }
     }); // <-- Questo ) chiude la promessa
 };
 

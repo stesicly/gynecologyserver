@@ -306,12 +306,12 @@ app.post('/api/send-emailold2x', async (req, res) => {
 
 app.post('/api/send-email', async (req, res) => {
     try {
-        const { to, subject, body, nomeUtente, indirizzo } = req.body;
+        const { to, subject, body, codicePaz, visita,typeofsheet } = req.body;
         const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
         const outputDir = path.join(__dirname, 'temp');
 
-        // Genera il documento e convertilo in PDF
-        const { pdfData, filename } = await generateDoc(db, nomeUtente, indirizzo, templatePath, outputDir);
+        // Genera il documento e convertilo in PDFawait generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
+        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
         console.log("PDF generato per l'email:", filename);
 
         if (!pdfData || pdfData.length === 0) {
