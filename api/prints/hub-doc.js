@@ -13,6 +13,7 @@ const queryForPatient =  `
             RTRIM(LTRIM(elencocitta.NomeComune)) as citta,
             elencocitta.CAP,
             elencoprov.SiglaProvincia as provcitta,
+            paziente.GruppoSanguigno as grsang,
             paziente.*
         FROM 
             paziente
@@ -36,7 +37,7 @@ function createQueryForPrint(nomeTabella, codicePaziente, codiceVisita){
                 "`Esito`, `UltimaMx`, `EsitoMx`, `DataVisitaGin` as dataVisita, `UMGin`, motivovisita.Tipo as `motivoVisita`, " +
                 "sintomi.Tipo as `sintomi`, genesterni.Tipo as `genEsterni`, vagina.Tipo as `vagina`, `colloUtero`, " +
                 "`corpoUtero`, `annessi`, `addome`, `speculum`, seno.Tipo as `seno`, `prescrizioni`, `accertamenti`, `noteGin`, `conclInd`," +
-                "ecooffice.Tipo as 'ecooffice', utero, endometrio, annessodx, annessosx " +
+                "ecooffice.Tipo as 'ecooffice', utero, endometrio, annessodx, annessosx, prosscontrgin " +
                 "FROM `ginecologica` " +
                 "LEFT JOIN contraccezione ON ginecologica.Contraccezione=contraccezione.Codice " +
                 "LEFT JOIN motivovisita ON ginecologica.MotivoVisita=motivovisita.Codice " +

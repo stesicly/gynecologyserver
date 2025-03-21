@@ -195,7 +195,7 @@ app.post('/api/send-email', async (req, res) => {
         const mailOptions = {
             from: config.EMAIL_USER,
             to: to,
-            cc: "siclaristefano@yahoo.it",
+            cc: "studioginecologico@gmail.com",
             subject: subject,
             text: body,
             attachments: [
