@@ -4,6 +4,29 @@ const { exec } = require('child_process');
 const PizZip = require('pizzip');
 const Docxtemplater = require('docxtemplater');
 
+const queryForPatient =  `
+        SELECT 
+            LTRIM(Cognome) as Cognome,
+            LTRIM(Nome) as Nome,
+            RTRIM(LTRIM(elencocomuni.NomeComune)) as NomeComune,
+            elencoprovincie.SiglaProvincia as Provincia,
+            RTRIM(LTRIM(elencocitta.NomeComune)) as citta,
+            elencocitta.CAP,
+            elencoprov.SiglaProvincia as provcitta,
+            paziente.*
+        FROM 
+            paziente
+        LEFT JOIN 
+            elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune
+        LEFT JOIN 
+            elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia
+        LEFT JOIN 
+            elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune
+        LEFT JOIN 
+            elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia
+        WHERE 
+            CodicePaz = ?
+    `
 
 function createQueryForPrint(nomeTabella, codicePaziente, codiceVisita){
     let testForLast = !isNaN(codiceVisita) && codiceVisita!==-1 ? " and id=" + codiceVisita + " " : " "
@@ -72,7 +95,7 @@ function createQueryForPrint(nomeTabella, codicePaziente, codiceVisita){
     }
 }
 
-const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outputDir) => {
+const generateDoc = async(db, codicePaz, visita, tableName, templatePath, outputDir) => {
 
     function execQuery(sql, params) {
         return new Promise((resolve, reject) => {
@@ -83,33 +106,11 @@ const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outp
         });
     }
 
-    const queryForPatient =`
-        SELECT 
-            LTRIM(Cognome) as Cognome,
-            LTRIM(Nome) as Nome,
-            RTRIM(LTRIM(elencocomuni.NomeComune)) as NomeComune,
-            elencoprovincie.SiglaProvincia as Provincia,
-            RTRIM(LTRIM(elencocitta.NomeComune)) as citta,
-            elencocitta.CAP,
-            elencoprov.SiglaProvincia as provcitta,
-            paziente.*
-        FROM 
-            paziente
-        LEFT JOIN 
-            elencocomuni ON paziente.LuogoNascita=elencocomuni.CodiceComune
-        LEFT JOIN 
-            elencoprovincie ON elencoprovincie.CodiceProvincia=elencocomuni.CodiceProvincia
-        LEFT JOIN 
-            elencocomuni as elencocitta ON paziente.Città=elencocitta.CodiceComune
-        LEFT JOIN 
-            elencoprovincie as elencoprov ON elencoprov.CodiceProvincia=elencocitta.CodiceProvincia
-        WHERE 
-            CodicePaz = ?
-    `;
+    const queryForVisit = createQueryForPrint(tableName, codicePaz, visita)
 
-    let queryForVisit = createQueryForPrint("ginecologica", codicePaz, visita)
-
-
+    function isValidDate(value) {
+        return value instanceof Date && !isNaN(value);
+    }
     console.log("queryForVisit===>", queryForVisit)
     return new Promise(async(resolve, reject) => {
         try {
@@ -130,11 +131,25 @@ const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outp
             const visitaFromDB =  resultsForVisit[0]
             const nomeUtente = paziente.Cognome + "-" + paziente.Nome;
 
+            // Converti i campi di tipo data in formato leggibile
+            Object.keys(visitaFromDB).forEach(key => {
+                if (visitaFromDB[key] instanceof Date) {
+                    visitaFromDB[key] = isValidDate(visitaFromDB[key]) ? visitaFromDB[key].toLocaleDateString() : null;
+                } else if (typeof visitaFromDB[key] === "string" && visitaFromDB[key].includes("T")) {
+                    // Gestisce i timestamp SQL in formato stringa (es: "2024-03-20T12:00:00.000Z")
+                    let dateValue = new Date(visitaFromDB[key]);
+                    visitaFromDB[key] = isValidDate(dateValue) ? dateValue.toLocaleDateString() : visitaFromDB[key];
+                }
+            });
+
             const dati = {
                 nomeUtente: `${paziente.Cognome} ${paziente.Nome}`,
                 indirizzo: paziente.Via + ", " + paziente.NomeComune,
+                ...paziente,
                 ...visitaFromDB
             };
+
+            console.log("dati====>")
 
             const content = fs.readFileSync(templatePath, 'binary');
             const zip = new PizZip(content);
@@ -155,7 +170,7 @@ const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outp
             }
 
             // Definisci il percorso del file .docx
-            const docPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.docx`);
+            const docPath = path.join(outputDir, `visita-${tableName}-${nomeUtente}.docx`);
 
             // Salva il file .docx sul server
             fs.writeFileSync(docPath, outputDOC);
@@ -172,12 +187,12 @@ const generateDoc = async(db, codicePaz, visita, typeofsheet, templatePath, outp
                 }
 
                 // Percorso del PDF generato (usando il nome dell'utente)
-                const pdfPath = path.join(outputDir, `visita-ginecologica-${nomeUtente}.pdf`);
+                const pdfPath = path.join(outputDir, `visita-${tableName}-${nomeUtente}.pdf`);
 
                 // Verifica che il PDF sia stato creato
                 if (fs.existsSync(pdfPath)) {
                     const pdfData = fs.readFileSync(pdfPath);
-                    resolve({ pdfData, filename: `visita-ginecologica-${nomeUtente}.pdf` });  // Restituisci anche il nome del file
+                    resolve({ pdfData, filename: `visita-${tableName}-${nomeUtente}.pdf` });  // Restituisci anche il nome del file
                 } else {
                     console.error('Errore: Il PDF non è stato trovato.');
                     reject(new Error('Errore durante la creazione del PDF.'));

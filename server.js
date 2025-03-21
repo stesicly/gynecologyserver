@@ -110,15 +110,45 @@ app.post('/generate-docxold', async (req, res) => {
     }
 });
 
+const getTableNameByTypeOfSheetID = async (typeofsheet) => {
+    const sqlSELECT = "SELECT name FROM typeofsheet WHERE id = ?";
+    try {
+        const result = await new Promise((resolve, reject) => {
+            db.query(sqlSELECT, [typeofsheet], (error, results) => {
+                if (error) reject(error);
+                else resolve(results);
+            });
+        });
+
+        if (result.length === 0) {
+            throw new Error('Tipo di documento non trovato.');
+        }
+
+        return result[0].name; // Restituisce il nome della tabella
+
+    } catch (error) {
+        console.error('Errore nel recupero del tipo di documento:', error);
+        throw error; // Rilancia l'errore per gestirlo nel chiamante
+    }
+};
+
 app.post('/generate-doc', async (req, res) => {
     const { codicePaz, visita, typeofsheet } = req.body;
 
-    const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
-    const outputDir = path.join(__dirname, 'temp');
+
+
+    // Primo try: eseguire la query per ottenere il nome della tabella
+
 
     try {
+
+        const tableName = typeofsheet;//await getTableNameByTypeOfSheetID(typeofsheet);
+        console.log("Tabella selezionata:", tableName);
+
+        const templatePath = path.join(__dirname, `api/prints/visita-${tableName}.docx`);
+        const outputDir = path.join(__dirname, 'temp');
         // Genera il documento e convertilo in PDF
-        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
+        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, tableName, templatePath, outputDir);
         console.log("filename====>", filename)
         // Verifica che pdfData sia valido e che il PDF esista
         if (!pdfData || pdfData.length === 0) {
@@ -141,6 +171,53 @@ app.post('/generate-doc', async (req, res) => {
         res.status(500).send('Errore nel generare il documento o nel convertirlo in PDF');
     }
 });
+
+
+
+app.post('/api/send-email', async (req, res) => {
+    try {
+        const { to, subject, body, codicePaz, visita,typeofsheet } = req.body;
+        const tableName = typeofsheet;//await getTableNameByTypeOfSheetID(typeofsheet);
+
+        const templatePath = path.join(__dirname, `api/prints/visita-${tableName}.docx`);
+        const outputDir = path.join(__dirname, 'temp');
+
+        // Genera il documento e convertilo in PDFawait generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
+        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, tableName, templatePath, outputDir);
+        console.log("PDF generato per l'email:", filename);
+
+        if (!pdfData || pdfData.length === 0) {
+            console.log('Errore: il PDF generato è vuoto.');
+            return res.status(500).send('Errore nella generazione del PDF.');
+        }
+
+        // Configura l'email con il PDF allegato
+        const mailOptions = {
+            from: config.EMAIL_USER,
+            to: to,
+            cc: "siclaristefano@yahoo.it",
+            subject: subject,
+            text: body,
+            attachments: [
+                {
+                    filename: filename,
+                    content: pdfData
+                }
+            ]
+        };
+
+        // Invia l'email
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email inviata con successo:', info);
+
+        return res.status(200).json({ message: 'Email inviata con successo', info });
+
+    } catch (error) {
+        console.error("Errore nell'invio dell'email:", error);
+        return res.status(500).json({ message: 'Errore nell\'invio dell\'email' });
+    }
+});
+
 
 const uploadDir = path.join(__dirname, "uploads");
 
@@ -236,115 +313,8 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Endpoint per l'invio delle email
-app.post('/api/send-emailold', async(req, res) => {
-    const { to, subject, body, attachment } = req.body;
-    console.log("provo a mandare la mail ", req.body)
 
-    const pdfBytes = await generatePdf({
-        nomeUtente: "Comito Irene",
-        indirizzo: "via Roma 11",
-        visita: "ginecologica"
-    });
-    // Opzioni dell'email
-    const mailOptions = {
-        from: config.EMAIL_USER,
-        to: to,
-        cc : "siclaristefano@yahoo.it",
-        subject: subject,
-        text: body,
-        attachments: [
-            {
-                filename: 'report.pdf',
-                content: pdfBytes, // Il buffer del PDF
-                encoding: 'base64', // Specifica l'encoding corretto
-            },
-        ]
-    };
 
-    // Invia l'email
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.log(error);
-            return res.status(500).json({ message: 'Errore nell\'invio dell\'email' });
-        }
-        res.status(200).json({ message: 'Email inviata con successo', info });
-    });
-});
-
-app.post('/api/send-emailold2x', async (req, res) => {
-    const { to, subject, body, attachment } = req.body;
-    console.log("Dati ricevuti per inviare l'email:", req.body);
-
-    // Opzioni dell'email
-    const mailOptions = {
-        from: config.EMAIL_USER,
-        to: to,
-        cc: "siclaristefano@yahoo.it",  // Aggiungi eventuali destinatari in CC
-        subject: subject,
-        text: body,
-        attachments: [
-            {
-                filename: 'report.pdf',  // Puoi personalizzare il nome del file
-                content: attachment//, Il buffer ricevuto dal client
-                //encoding: 'base64',  // Usa l'encoding corretto
-            }
-        ]
-    };
-
-    // Invia l'email
-    try {
-        // Invia l'email e aspetta il risultato
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email inviata con successo:', info);
-        return res.status(200).json({ message: 'Email inviata con successo', info });
-    } catch (error) {
-        console.error('Errore nell\'invio dell\'email:', error);
-        return res.status(500).json({ message: 'Errore nell\'invio dell\'email', error });
-    }
-});
-
-app.post('/api/send-email', async (req, res) => {
-    try {
-        const { to, subject, body, codicePaz, visita,typeofsheet } = req.body;
-        const templatePath = path.join(__dirname, 'api/prints/visita-ginecologica.docx');
-        const outputDir = path.join(__dirname, 'temp');
-
-        // Genera il documento e convertilo in PDFawait generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
-        const { pdfData, filename } = await generateDoc(db, codicePaz, visita, typeofsheet, templatePath, outputDir);
-        console.log("PDF generato per l'email:", filename);
-
-        if (!pdfData || pdfData.length === 0) {
-            console.log('Errore: il PDF generato è vuoto.');
-            return res.status(500).send('Errore nella generazione del PDF.');
-        }
-
-        // Configura l'email con il PDF allegato
-        const mailOptions = {
-            from: config.EMAIL_USER,
-            to: to,
-            cc: "siclaristefano@yahoo.it",
-            subject: subject,
-            text: body,
-            attachments: [
-                {
-                    filename: filename,
-                    content: pdfData
-                }
-            ]
-        };
-
-        // Invia l'email
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email inviata con successo:', info);
-
-        return res.status(200).json({ message: 'Email inviata con successo', info });
-
-    } catch (error) {
-        console.error("Errore nell'invio dell'email:", error);
-        return res.status(500).json({ message: 'Errore nell\'invio dell\'email' });
-    }
-});
 
 app.post("/api/save/addItemToDropDownTable", (req, res)=>{
 
