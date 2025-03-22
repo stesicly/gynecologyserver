@@ -33,62 +33,79 @@ function createQueryForPrint(nomeTabella, codicePaziente, codiceVisita){
     let testForLast = !isNaN(codiceVisita) && codiceVisita!==-1 ? " and id=" + codiceVisita + " " : " "
     switch(nomeTabella){
         case "ginecologica":
-            return "SELECT id, contraccezione.Tipo as `contraccezione`, `TerOrmRad`, `PatGinPregr`, `IntervGin`, `UltimoCPT`, " +
-                "`Esito`, `UltimaMx`, `EsitoMx`, `DataVisitaGin` as dataVisita, `UMGin`, motivovisita.Tipo as `motivoVisita`, " +
-                "sintomi.Tipo as `sintomi`, genesterni.Tipo as `genEsterni`, vagina.Tipo as `vagina`, `colloUtero`, " +
-                "`corpoUtero`, `annessi`, `addome`, `speculum`, seno.Tipo as `seno`, `prescrizioni`, `accertamenti`, `noteGin`, `conclInd`," +
-                "ecooffice.Tipo as 'ecooffice', utero, endometrio, annessodx, annessosx, prosscontrgin " +
-                "FROM `ginecologica` " +
-                "LEFT JOIN contraccezione ON ginecologica.Contraccezione=contraccezione.Codice " +
-                "LEFT JOIN motivovisita ON ginecologica.MotivoVisita=motivovisita.Codice " +
-                "LEFT JOIN sintomi ON ginecologica.Sintomi=sintomi.Codice " +
-                "LEFT JOIN genesterni ON ginecologica.GenEsterni=genesterni.Codice " +
-                "LEFT JOIN vagina ON ginecologica.Vagina=vagina.Codice " +
-                "LEFT JOIN seno ON ginecologica.Seno=seno.Codice " +
-                "LEFT JOIN ecooffice ON ginecologica.ecooffice=ecooffice.Codice " +
-                "WHERE CodicePaz=" + codicePaziente + testForLast +
-                "ORDER BY id DESC LIMIT 1";
+            return `
+                    SELECT ginecologica.*,
+                           contraccezione.Tipo as "contraccezione", 
+                           DataVisitaGin as dataVisita,
+                           ecooffice.Tipo as 'ecooffice',
+                           genesterni.Tipo as "genEsterni",
+                           motivovisita.Tipo as "motivoVisita",
+                           seno.Tipo as "seno",
+                           sintomi.Tipo as "sintomi", 
+                           vagina.Tipo as "vagina"
+                    FROM ginecologica
+                             LEFT JOIN contraccezione ON ginecologica.Contraccezione=contraccezione.Codice
+                             LEFT JOIN motivovisita ON ginecologica.MotivoVisita=motivovisita.Codice
+                             LEFT JOIN sintomi ON ginecologica.Sintomi=sintomi.Codice
+                             LEFT JOIN genesterni ON ginecologica.GenEsterni=genesterni.Codice
+                             LEFT JOIN vagina ON ginecologica.Vagina=vagina.Codice
+                             LEFT JOIN seno ON ginecologica.Seno=seno.Codice
+                             LEFT JOIN ecooffice ON ginecologica.ecooffice=ecooffice.Codice
+                    WHERE CodicePaz=${codicePaziente} ${testForLast}
+                    ORDER BY id DESC LIMIT 1`;
 
         case "ostetrica":
-            return "SELECT `id`, `CodicePaz`, `DataVisitaOst` as dataVisita, motivovisitaost.Tipo as `MotivoVisitaOst`, " +
-                "anamposnegh.Tipo as `HIVOst`, anamidrs.Tipo as `RosoliaOst`, epatiteb.Tipo as `EpatiteBOst`, `dataEpB`, " +
-                "anamposneg.Tipo as `EpatiteCOst`, `dataEpC`, anamidr.Tipo as`ToxoOst`, trattotal.Tipo as `TrattoTalOst`, `dataUltimi`, " +
-                "`UltimiEsami`, `DataUltimaEcog`, `UltimaEcog`, `PAOS`, `BCF`, `Edemi`, addome.Tipo as `AddomeOst`, colloutero.Tipo as `ColloUtOst`, " +
-                "corpoutero.Tipo as `CorpoUtOst`, speculum.Tipo as `SpeculumOst`,partepresentata.Tipo as `PartePresentata`, " +
-                "situazioneost.Tipo as `Situazione`, membrane.Tipo as `Membrane`, esbattvag.Tipo as `EsBattVag`, `UMDich`, `EPPDich`, `UmEco`, `EPPEco`, " +
-                "`Prescrizioni`, `Accertamenti`, `NoteOst`, `ConclInd`, testintcomb, datatestintcomb, testgenetico.Tipo as 'testgenvalue' , " +
-                "testgen, datatestgen, ecoofficeost  " +
-                "FROM `ostetrica` " +
-                "LEFT JOIN motivovisitaost ON ostetrica.MotivoVisitaOst=motivovisitaost.Codice " +
-                "LEFT JOIN addome ON ostetrica.AddomeOst=addome.Codice " +
-                "LEFT JOIN anamposnegh ON ostetrica.HIVOst=anamposnegh.Codice " +
-                "LEFT JOIN anamidrs ON ostetrica.RosoliaOst=anamidrs.Codice " +
-                "LEFT JOIN colloutero ON ostetrica.ColloUtOst=colloutero.Codice " +
-                "LEFT JOIN corpoutero ON ostetrica.CorpoUtOst=corpoutero.Codice " +
-                "LEFT JOIN epatiteb ON ostetrica.EpatiteBOst=epatiteb.Codice " +
-                "LEFT JOIN anamposneg ON ostetrica.EpatiteCOst=anamposneg.Codice " +
-                "LEFT JOIN anamidr ON ostetrica.ToxoOst=anamidr.Codice " +
-                "LEFT JOIN esbattvag ON ostetrica.EsBattVag=esbattvag.Codice " +
-                "LEFT JOIN membrane ON ostetrica.Membrane=membrane.Codice " +
+            return `
+                    SELECT ostetrica.*,
+                           DataVisitaOst as dataVisita,
+                           motivovisitaost.Tipo as "MotivoVisitaOst",
+                           anamposnegh.Tipo as "HIVOst", 
+                           anamidrs.Tipo as "RosoliaOst", 
+                           epatiteb.Tipo as "EpatiteBOst", 
+                           anamposneg.Tipo as "EpatiteCOst", 
+                           anamidr.Tipo as "ToxoOst", 
+                           trattotal.Tipo as "TrattoTalOst",
+                           addome.Tipo as "AddomeOst",
+                           colloutero.Tipo as "ColloUtOst", 
+                           corpoutero.Tipo as "CorpoUtOst", 
+                           speculum.Tipo as "SpeculumOst",
+                           partepresentata.Tipo as "PartePresentata", 
+                           situazioneost.Tipo as "Situazione", 
+                           membrane.Tipo as "Membrane",
+                           esbattvag.Tipo as "EsBattVag",
+                           testgenetico.Tipo as "testgenvalue"
+                    FROM ostetrica
+                             LEFT JOIN motivovisitaost ON ostetrica.MotivoVisitaOst=motivovisitaost.Codice
+                             LEFT JOIN addome ON ostetrica.AddomeOst=addome.Codice
+                             LEFT JOIN anamposnegh ON ostetrica.HIVOst=anamposnegh.Codice
+                             LEFT JOIN anamidrs ON ostetrica.RosoliaOst=anamidrs.Codice
+                             LEFT JOIN colloutero ON ostetrica.ColloUtOst=colloutero.Codice
+                             LEFT JOIN corpoutero ON ostetrica.CorpoUtOst=corpoutero.Codice
+                             LEFT JOIN epatiteb ON ostetrica.EpatiteBOst=epatiteb.Codice
+                             LEFT JOIN anamposneg ON ostetrica.EpatiteCOst=anamposneg.Codice
+                             LEFT JOIN anamidr ON ostetrica.ToxoOst=anamidr.Codice
+                             LEFT JOIN esbattvag ON ostetrica.EsBattVag=esbattvag.Codice
+                             LEFT JOIN membrane ON ostetrica.Membrane=membrane.Codice
+                             LEFT JOIN partepresentata ON ostetrica.PartePresentata=partepresentata.Codice
+                             LEFT JOIN situazioneost ON ostetrica.Situazione=situazioneost.Codice
+                             LEFT JOIN speculum ON ostetrica.SpeculumOst=speculum.Codice
+                             LEFT JOIN trattotal ON ostetrica.TrattoTalOst=trattotal.Codice
+                             LEFT JOIN testgenetico ON ostetrica.testgenvalue=testgenetico.Codice
+                    WHERE CodicePaz=${codicePaziente} ${testForLast}
+                    ORDER BY id DESC LIMIT 1`;
 
-                "LEFT JOIN partepresentata ON ostetrica.PartePresentata=partepresentata.Codice " +
-                "LEFT JOIN situazioneost ON ostetrica.Situazione=situazioneost.Codice " +
-
-                "LEFT JOIN speculum ON ostetrica.SpeculumOst=speculum.Codice " +
-                "LEFT JOIN trattotal ON ostetrica.TrattoTalOst=trattotal.Codice " +
-                "LEFT JOIN testgenetico ON ostetrica.testgenvalue=testgenetico.Codice " +
-                "WHERE CodicePaz=" + codicePaziente + testForLast +
-                "ORDER BY id DESC LIMIT 1";
 
         case "senologica":
-            return "SELECT * FROM senologica " +
-                "WHERE CodicePaz=" + codicePaziente +  testForLast +
-                "ORDER BY id DESC LIMIT 1";
+            return `
+                    SELECT * FROM senologica
+                    WHERE CodicePaz=${codicePaziente} ${testForLast}
+                    ORDER BY id DESC LIMIT 1`;
 
         case "colposcopia":
-            return "SELECT * FROM colposcopia " +
-                "WHERE CodicePaz=" + codicePaziente + " " +
-                "ORDER BY CodicePaz DESC";
+            return `
+                    SELECT * FROM colposcopia
+                    WHERE CodicePaz=${codicePaziente}
+                    ORDER BY CodicePaz DESC`;
 
         default:
             return ""
@@ -140,6 +157,9 @@ const generateDoc = async(db, codicePaz, visita, tableName, templatePath, output
                     // Gestisce i timestamp SQL in formato stringa (es: "2024-03-20T12:00:00.000Z")
                     let dateValue = new Date(visitaFromDB[key]);
                     visitaFromDB[key] = isValidDate(dateValue) ? dateValue.toLocaleDateString() : visitaFromDB[key];
+                }
+                if (visitaFromDB[key] === null || visitaFromDB[key] === undefined) {
+                    visitaFromDB[key] = '';
                 }
             });
 
